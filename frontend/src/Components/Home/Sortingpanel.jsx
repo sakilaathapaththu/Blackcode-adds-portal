@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   Box,
   Paper,
@@ -13,14 +13,12 @@ import {
   Slider,
   Typography,
   Button,
-  ButtonGroup,
   Accordion,
   AccordionSummary,
   AccordionDetails,
   Stack,
   Divider,
   IconButton,
-  Collapse,
   Fade,
   Slide,
   useTheme,
@@ -32,16 +30,20 @@ import {
   FilterList as FilterIcon,
   Sort as SortIcon,
   ExpandMore as ExpandMoreIcon,
-  LocationOn as LocationIcon,
-  Home as HomeIcon,
+  Code as CodeIcon,
   School as SchoolIcon,
-  Restaurant as RestaurantIcon,
+  Business as BusinessIcon,
   MenuBook as MenuBookIcon,
   AttachMoney as MoneyIcon,
   Clear as ClearIcon,
   Tune as TuneIcon,
-  Menu as MenuIcon,
   Close as CloseIcon,
+  Assignment as AssignmentIcon,
+  Engineering as EngineeringIcon,
+  Timer as TimerIcon,
+  Person as PersonIcon,
+  Star as StarIcon,
+  Language as LanguageIcon,
 } from '@mui/icons-material';
 import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 
@@ -171,7 +173,7 @@ const SortButton = styled(Button)(({ theme, selected }) => ({
   },
 }));
 
-const MobileFilterButton = styled(IconButton)(({ theme }) => ({
+const MobileFilterButton = styled(IconButton)(({ theme, isDrawerOpen }) => ({
   position: 'fixed',
   top: 80,
   left: 16,
@@ -179,80 +181,141 @@ const MobileFilterButton = styled(IconButton)(({ theme }) => ({
   background: theme.palette.primary.main,
   color: 'white',
   boxShadow: '0 4px 20px rgba(0, 123, 255, 0.3)',
+  opacity: isDrawerOpen ? 0 : 1,
+  visibility: isDrawerOpen ? 'hidden' : 'visible',
+  transform: isDrawerOpen ? 'scale(0.8)' : 'scale(1)',
+  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
   
   '&:hover': {
     background: theme.palette.primary.dark,
-    transform: 'scale(1.1)',
+    transform: isDrawerOpen ? 'scale(0.8)' : 'scale(1.1)',
   },
 }));
 
 const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   
   // State for all filters and search
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedLocation, setSelectedLocation] = useState('');
-  const [priceRange, setPriceRange] = useState([5000, 50000]);
-  const [selectedRoomType, setSelectedRoomType] = useState('');
-  const [selectedFacilities, setSelectedFacilities] = useState([]);
-  const [selectedAvailability, setSelectedAvailability] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedAssignmentType, setSelectedAssignmentType] = useState('');
+  const [priceRange, setPriceRange] = useState([1000, 20000]);
+  const [selectedDeliveryTime, setSelectedDeliveryTime] = useState('');
+  const [selectedProviderType, setSelectedProviderType] = useState('');
+  const [selectedRating, setSelectedRating] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedSpecializations, setSelectedSpecializations] = useState([]);
   const [sortOption, setSortOption] = useState('newest');
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   
-  // Data arrays - easily configurable for backend integration
+  // Set initial load to false after component mounts
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsInitialLoad(false);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Separate state for slider to prevent re-renders
+  const [isDragging, setIsDragging] = useState(false);
+  const [priceChangeTimeout, setPriceChangeTimeout] = useState(null);
+  
+  // Data arrays - configured for assignment services
   const searchSuggestions = [
-    'Room near University of Moratuwa',
-    'Shared apartment in Malabe',
-    'Single room with AC in Colombo',
-    'Student housing near SLIIT',
-    'Furnished room for rent',
-    'Boarding house in Kandy',
+    'Programming assignment in Python',
+    'Essay on environmental science',
+    'Data structure implementation',
+    'Business plan presentation',
+    'Research paper on machine learning',
+    'Final year project proposal',
+    'Mathematics problem solving',
+    'Web development project',
   ];
   
-  const locations = [
-    'All Locations',
-    'Malabe',
-    'Colombo',
-    'Kandy',
-    'Jaffna',
-    'Galle',
-    'Matara',
-    'Negombo',
-    'Kurunegala',
-    'Anuradhapura',
-    'Ratnapura',
+  const categories = [
+    'All Categories',
+    'Computer Science',
+    'Engineering',
+    'Business & Management',
+    'Arts & Humanities',
+    'Mathematics & Statistics',
+    'Science & Technology',
+    'Social Sciences',
+    'Law & Legal Studies',
+    'Medicine & Health',
+    'Economics & Finance',
+    'Design & Creative Arts',
   ];
   
-  const roomTypes = [
+  const assignmentTypes = [
     'All Types',
-    'Single Room',
-    'Double Room',
-    'Shared Room',
-    'Annex',
-    'Studio Apartment',
-    'Boarding House',
+    'Essay / Report',
+    'Coding Project',
+    'Research Paper',
+    'Presentation / Slides',
+    'Final Year Project',
+    'Thesis / Dissertation',
+    'Case Study',
+    'Lab Report',
+    'Problem Solving',
+    'Review & Analysis',
+    'Technical Documentation',
   ];
   
-  const facilities = [
-    'Air Conditioning',
-    'Kitchen Access',
-    'Attached Bathroom',
-    'Laundry',
-    'WiFi',
-    'Parking',
-    'Security',
-    'Furnished',
-    'Study Table',
-    'Wardrobe',
-  ];
-  
-  const availabilityOptions = [
-    'All',
-    'Immediate',
-    'Within 1 Week',
-    'Within 1 Month',
+  const deliveryTimes = [
+    'Any Time',
+    'Within 24h',
+    '2-3 Days',
+    '4-7 Days',
+    '1-2 Weeks',
+    '1 Month+',
     'Flexible',
+  ];
+  
+  const providerTypes = [
+    'All Providers',
+    'Individual Freelancer',
+    'Academic Company',
+    'Verified Provider',
+    'Top Rated Expert',
+    'Student Helper',
+  ];
+  
+  const ratingOptions = [
+    'Any Rating',
+    '4+ Stars',
+    '3+ Stars',
+    '2+ Stars',
+    '1+ Stars',
+  ];
+  
+  const languages = [
+    'Any Language',
+    'English',
+    'Sinhala',
+    'Tamil',
+    'Hindi',
+    'French',
+    'German',
+    'Spanish',
+    'Chinese',
+  ];
+  
+  const specializations = [
+    'Machine Learning',
+    'Web Development',
+    'Mobile Apps',
+    'Data Analysis',
+    'Database Design',
+    'UI/UX Design',
+    'Digital Marketing',
+    'Financial Modeling',
+    'Academic Writing',
+    'Technical Writing',
+    'Research Methods',
+    'Statistics',
   ];
   
   const sortOptions = [
@@ -260,14 +323,15 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
     { value: 'price-low', label: 'Price: Low to High' },
     { value: 'price-high', label: 'Price: High to Low' },
     { value: 'rating', label: 'Highest Rated' },
-    { value: 'nearest', label: 'Closest to University' },
+    { value: 'delivery', label: 'Fastest Delivery' },
+    { value: 'popular', label: 'Most Popular' },
   ];
   
   const quickCategories = [
-    { label: 'Rooms for Rent', icon: <HomeIcon />, value: 'rooms' },
-    { label: 'Student Housing', icon: <SchoolIcon />, value: 'student' },
-    { label: 'Food & Cafeteria', icon: <RestaurantIcon />, value: 'food' },
-    { label: 'Tuition & Courses', icon: <MenuBookIcon />, value: 'tuition' },
+    { label: 'Programming & Coding', icon: <CodeIcon />, value: 'programming' },
+    { label: 'Academic Writing', icon: <MenuBookIcon />, value: 'writing' },
+    { label: 'Engineering Projects', icon: <EngineeringIcon />, value: 'engineering' },
+    { label: 'Business Analysis', icon: <BusinessIcon />, value: 'business' },
   ];
 
   // Event handlers for backend integration
@@ -276,60 +340,83 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
     if (onFiltersChange) {
       onFiltersChange({
         search: value,
-        location: selectedLocation,
+        category: selectedCategory,
+        assignmentType: selectedAssignmentType,
         priceRange,
-        roomType: selectedRoomType,
-        facilities: selectedFacilities,
-        availability: selectedAvailability,
+        deliveryTime: selectedDeliveryTime,
+        providerType: selectedProviderType,
+        rating: selectedRating,
+        language: selectedLanguage,
+        specializations: selectedSpecializations,
       });
     }
-  }, [selectedLocation, priceRange, selectedRoomType, selectedFacilities, selectedAvailability, onFiltersChange]);
+  }, [selectedCategory, selectedAssignmentType, priceRange, selectedDeliveryTime, selectedProviderType, selectedRating, selectedLanguage, selectedSpecializations, onFiltersChange]);
 
-  const handleLocationChange = useCallback((value) => {
-    setSelectedLocation(value);
+  const handleCategoryChange = useCallback((value) => {
+    setSelectedCategory(value);
     if (onFiltersChange) {
       onFiltersChange({
         search: searchQuery,
-        location: value,
+        category: value,
+        assignmentType: selectedAssignmentType,
         priceRange,
-        roomType: selectedRoomType,
-        facilities: selectedFacilities,
-        availability: selectedAvailability,
+        deliveryTime: selectedDeliveryTime,
+        providerType: selectedProviderType,
+        rating: selectedRating,
+        language: selectedLanguage,
+        specializations: selectedSpecializations,
       });
     }
-  }, [searchQuery, priceRange, selectedRoomType, selectedFacilities, selectedAvailability, onFiltersChange]);
+  }, [searchQuery, selectedAssignmentType, priceRange, selectedDeliveryTime, selectedProviderType, selectedRating, selectedLanguage, selectedSpecializations, onFiltersChange]);
 
-  const handlePriceRangeChange = useCallback((value) => {
+  const handlePriceRangeChange = useCallback((event, value, activeThumb) => {
+    // Immediately update price range without triggering callbacks during drag
     setPriceRange(value);
-    if (onFiltersChange) {
-      onFiltersChange({
-        search: searchQuery,
-        location: selectedLocation,
-        priceRange: value,
-        roomType: selectedRoomType,
-        facilities: selectedFacilities,
-        availability: selectedAvailability,
-      });
-    }
-  }, [searchQuery, selectedLocation, selectedRoomType, selectedFacilities, selectedAvailability, onFiltersChange]);
+  }, []);
 
-  const handleFacilityToggle = useCallback((facility) => {
-    const updatedFacilities = selectedFacilities.includes(facility)
-      ? selectedFacilities.filter(f => f !== facility)
-      : [...selectedFacilities, facility];
+  const handlePriceRangeChangeCommitted = useCallback((event, value) => {
+    // Only call parent callback when user finishes dragging
+    setIsDragging(false);
     
-    setSelectedFacilities(updatedFacilities);
     if (onFiltersChange) {
       onFiltersChange({
         search: searchQuery,
-        location: selectedLocation,
-        priceRange,
-        roomType: selectedRoomType,
-        facilities: updatedFacilities,
-        availability: selectedAvailability,
+        category: selectedCategory,
+        assignmentType: selectedAssignmentType,
+        priceRange: value,
+        deliveryTime: selectedDeliveryTime,
+        providerType: selectedProviderType,
+        rating: selectedRating,
+        language: selectedLanguage,
+        specializations: selectedSpecializations,
       });
     }
-  }, [searchQuery, selectedLocation, priceRange, selectedRoomType, selectedFacilities, selectedAvailability, onFiltersChange]);
+  }, [searchQuery, selectedCategory, selectedAssignmentType, selectedDeliveryTime, selectedProviderType, selectedRating, selectedLanguage, selectedSpecializations, onFiltersChange]);
+
+  const handleSliderMouseDown = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleSpecializationToggle = useCallback((specialization) => {
+    const updatedSpecializations = selectedSpecializations.includes(specialization)
+      ? selectedSpecializations.filter(s => s !== specialization)
+      : [...selectedSpecializations, specialization];
+    
+    setSelectedSpecializations(updatedSpecializations);
+    if (onFiltersChange) {
+      onFiltersChange({
+        search: searchQuery,
+        category: selectedCategory,
+        assignmentType: selectedAssignmentType,
+        priceRange,
+        deliveryTime: selectedDeliveryTime,
+        providerType: selectedProviderType,
+        rating: selectedRating,
+        language: selectedLanguage,
+        specializations: updatedSpecializations,
+      });
+    }
+  }, [searchQuery, selectedCategory, selectedAssignmentType, priceRange, selectedDeliveryTime, selectedProviderType, selectedRating, selectedLanguage, onFiltersChange]);
 
   const handleSortChange = useCallback((value) => {
     setSortOption(value);
@@ -340,29 +427,36 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
 
   const handleClearAllFilters = useCallback(() => {
     setSearchQuery('');
-    setSelectedLocation('');
-    setPriceRange([5000, 50000]);
-    setSelectedRoomType('');
-    setSelectedFacilities([]);
-    setSelectedAvailability('');
+    setSelectedCategory('');
+    setSelectedAssignmentType('');
+    setPriceRange([1000, 20000]);
+    setSelectedDeliveryTime('');
+    setSelectedProviderType('');
+    setSelectedRating('');
+    setSelectedLanguage('');
+    setSelectedSpecializations([]);
+    setIsDragging(false);
     
     if (onFiltersChange) {
       onFiltersChange({
         search: '',
-        location: '',
-        priceRange: [5000, 50000],
-        roomType: '',
-        facilities: [],
-        availability: '',
+        category: '',
+        assignmentType: '',
+        priceRange: [1000, 20000],
+        deliveryTime: '',
+        providerType: '',
+        rating: '',
+        language: '',
+        specializations: [],
       });
     }
   }, [onFiltersChange]);
 
-  // Panel content component
+  // Panel content component - with conditional animations only on initial load
   const PanelContent = () => (
     <Box sx={{ p: 3 }}>
       {/* Search Bar */}
-      <Fade in={true} timeout={500}>
+      <Fade in={true} timeout={isInitialLoad ? 500 : 0}>
         <Box sx={{ mb: 3 }}>
           <Autocomplete
             freeSolo
@@ -372,7 +466,7 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
             renderInput={(params) => (
               <TextField
                 {...params}
-                placeholder="Search rooms, apartments..."
+                placeholder="Search assignments, projects..."
                 variant="outlined"
                 fullWidth
                 InputProps={{
@@ -405,14 +499,14 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
       </Fade>
 
       {/* Quick Categories */}
-      <Fade in={true} timeout={700}>
+      <Fade in={true} timeout={isInitialLoad ? 700 : 0}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600, color: 'text.primary' }}>
             Quick Categories
           </Typography>
           <Stack spacing={1}>
             {quickCategories.map((category, index) => (
-              <Slide key={category.value} direction="right" in={true} timeout={800 + index * 100}>
+              <Slide key={category.value} direction="right" in={true} timeout={isInitialLoad ? 800 + index * 100 : 0}>
                 <CategoryButton
                   fullWidth
                   startIcon={category.icon}
@@ -428,8 +522,8 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
 
       <Divider sx={{ my: 2 }} />
 
-      {/* Filters Section */}
-      <Fade in={true} timeout={900}>
+      {/* Filters Section - No animation wrapper to prevent re-rendering issues */}
+      <Box>
         <Accordion defaultExpanded sx={{ boxShadow: 'none', '&:before': { display: 'none' } }}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -442,7 +536,7 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
             <Typography variant="h6" sx={{ fontWeight: 600 }}>
               Filters
             </Typography>
-            {(selectedLocation || selectedRoomType || selectedFacilities.length > 0 || selectedAvailability) && (
+            {(selectedCategory || selectedAssignmentType || selectedDeliveryTime || selectedProviderType || selectedRating || selectedLanguage || selectedSpecializations.length > 0) && (
               <Button
                 size="small"
                 startIcon={<ClearIcon />}
@@ -459,36 +553,41 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
           
           <AccordionDetails sx={{ px: 0 }}>
             <Stack spacing={3}>
-              {/* Location Filter */}
+              {/* Category Filter */}
               <FormControl fullWidth>
-                <InputLabel>Location</InputLabel>
+                <InputLabel>Subject Area</InputLabel>
                 <Select
-                  value={selectedLocation}
-                  onChange={(e) => handleLocationChange(e.target.value)}
-                  label="Location"
+                  value={selectedCategory}
+                  onChange={(e) => handleCategoryChange(e.target.value)}
+                  label="Subject Area"
                   startAdornment={
                     <InputAdornment position="start">
-                      <LocationIcon color="primary" />
+                      <SchoolIcon color="primary" />
                     </InputAdornment>
                   }
                 >
-                  {locations.map((location) => (
-                    <MenuItem key={location} value={location}>
-                      {location}
+                  {categories.map((category) => (
+                    <MenuItem key={category} value={category}>
+                      {category}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
-              {/* Room Type Filter */}
+              {/* Assignment Type Filter */}
               <FormControl fullWidth>
-                <InputLabel>Room Type</InputLabel>
+                <InputLabel>Assignment Type</InputLabel>
                 <Select
-                  value={selectedRoomType}
-                  onChange={(e) => setSelectedRoomType(e.target.value)}
-                  label="Room Type"
+                  value={selectedAssignmentType}
+                  onChange={(e) => setSelectedAssignmentType(e.target.value)}
+                  label="Assignment Type"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <AssignmentIcon color="primary" />
+                    </InputAdornment>
+                  }
                 >
-                  {roomTypes.map((type) => (
+                  {assignmentTypes.map((type) => (
                     <MenuItem key={type} value={type}>
                       {type}
                     </MenuItem>
@@ -496,77 +595,199 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
                 </Select>
               </FormControl>
 
-              {/* Price Range */}
-              <Box>
+              {/* Price Range - Ultra smooth with zero re-renders during drag */}
+              <Box sx={{ position: 'relative' }}>
                 <Typography gutterBottom sx={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                   <MoneyIcon color="primary" sx={{ mr: 1 }} />
                   Price Range (LKR)
                 </Typography>
-                <Box sx={{ px: 2 }}>
+                <Box sx={{ px: 2, py: 1 }}>
                   <Slider
                     value={priceRange}
-                    onChange={(e, newValue) => handlePriceRangeChange(newValue)}
+                    onChange={handlePriceRangeChange}
+                    onChangeCommitted={handlePriceRangeChangeCommitted}
+                    onMouseDown={handleSliderMouseDown}
                     valueLabelDisplay="auto"
-                    min={5000}
-                    max={100000}
-                    step={5000}
+                    min={1000}
+                    max={50000}
+                    step={100} // Even smaller step for ultra-precise control
                     marks={[
-                      { value: 5000, label: '5K' },
+                      { value: 1000, label: '1K' },
+                      { value: 10000, label: '10K' },
                       { value: 25000, label: '25K' },
                       { value: 50000, label: '50K' },
-                      { value: 100000, label: '100K' },
                     ]}
                     sx={{
                       color: 'primary.main',
+                      height: 8,
                       '& .MuiSlider-thumb': {
                         background: 'linear-gradient(135deg, #007BFF, #00C853)',
-                        boxShadow: '0 4px 15px rgba(0, 123, 255, 0.3)',
+                        boxShadow: isDragging 
+                          ? '0 8px 25px rgba(0, 123, 255, 0.5)'
+                          : '0 4px 15px rgba(0, 123, 255, 0.3)',
+                        width: 20,
+                        height: 20,
+                        transition: isDragging ? 'none' : 'box-shadow 0.15s ease-in-out',
+                        cursor: isDragging ? 'grabbing' : 'grab',
+                        '&:hover': {
+                          boxShadow: '0 6px 20px rgba(0, 123, 255, 0.4)',
+                        },
+                      },
+                      '& .MuiSlider-track': {
+                        background: 'linear-gradient(135deg, #007BFF, #00C853)',
+                        border: 'none',
+                        height: 8,
+                        transition: 'none', // No transitions during drag
+                      },
+                      '& .MuiSlider-rail': {
+                        height: 8,
+                        opacity: 0.3,
+                        backgroundColor: '#d0d7de',
+                        transition: 'none',
+                      },
+                      '& .MuiSlider-valueLabel': {
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        background: 'linear-gradient(135deg, #007BFF, #00C853)',
+                        borderRadius: 6,
+                        padding: '4px 8px',
+                        transition: 'none',
+                      },
+                      '& .MuiSlider-mark': {
+                        backgroundColor: 'currentColor',
+                        height: 12,
+                        width: 2,
+                        borderRadius: 1,
+                        transition: 'none',
+                        '&.MuiSlider-markActive': {
+                          backgroundColor: 'white',
+                        },
+                      },
+                      '& .MuiSlider-markLabel': {
+                        fontSize: '0.75rem',
+                        color: 'text.secondary',
+                        fontWeight: 500,
                       },
                     }}
                   />
-                  <Paper sx={{ 
+                  <Box sx={{ 
                     p: 1.5, 
-                    mt: 1, 
-                    bgcolor: 'primary.light', 
-                    color: 'primary.contrastText',
+                    mt: 2, 
                     textAlign: 'center',
-                    borderRadius: 2
+                    borderRadius: 2,
+                    background: 'linear-gradient(135deg, #007BFF, #00C853)',
+                    boxShadow: '0 2px 8px rgba(0, 123, 255, 0.2)',
+                    // Prevent any transitions that could cause re-renders
+                    transition: 'none',
                   }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()} LKR
+                    <Typography variant="body2" sx={{ 
+                      fontWeight: 600,
+                      color: 'white',
+                      // Use key to force re-render only when value actually changes
+                      key: `${priceRange[0]}-${priceRange[1]}`,
+                    }}>
+                      LKR {priceRange[0].toLocaleString()} - {priceRange[1].toLocaleString()}
                     </Typography>
-                  </Paper>
+                  </Box>
                 </Box>
               </Box>
 
-              {/* Availability Filter */}
+              {/* Delivery Time Filter */}
               <FormControl fullWidth>
-                <InputLabel>Availability</InputLabel>
+                <InputLabel>Delivery Time</InputLabel>
                 <Select
-                  value={selectedAvailability}
-                  onChange={(e) => setSelectedAvailability(e.target.value)}
-                  label="Availability"
+                  value={selectedDeliveryTime}
+                  onChange={(e) => setSelectedDeliveryTime(e.target.value)}
+                  label="Delivery Time"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <TimerIcon color="primary" />
+                    </InputAdornment>
+                  }
                 >
-                  {availabilityOptions.map((option) => (
-                    <MenuItem key={option} value={option}>
-                      {option}
+                  {deliveryTimes.map((time) => (
+                    <MenuItem key={time} value={time}>
+                      {time}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
 
-              {/* Facilities */}
+              {/* Provider Type Filter */}
+              <FormControl fullWidth>
+                <InputLabel>Provider Type</InputLabel>
+                <Select
+                  value={selectedProviderType}
+                  onChange={(e) => setSelectedProviderType(e.target.value)}
+                  label="Provider Type"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <PersonIcon color="primary" />
+                    </InputAdornment>
+                  }
+                >
+                  {providerTypes.map((type) => (
+                    <MenuItem key={type} value={type}>
+                      {type}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Rating Filter */}
+              <FormControl fullWidth>
+                <InputLabel>Minimum Rating</InputLabel>
+                <Select
+                  value={selectedRating}
+                  onChange={(e) => setSelectedRating(e.target.value)}
+                  label="Minimum Rating"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <StarIcon color="primary" />
+                    </InputAdornment>
+                  }
+                >
+                  {ratingOptions.map((rating) => (
+                    <MenuItem key={rating} value={rating}>
+                      {rating}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Language Filter */}
+              <FormControl fullWidth>
+                <InputLabel>Language</InputLabel>
+                <Select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value)}
+                  label="Language"
+                  startAdornment={
+                    <InputAdornment position="start">
+                      <LanguageIcon color="primary" />
+                    </InputAdornment>
+                  }
+                >
+                  {languages.map((language) => (
+                    <MenuItem key={language} value={language}>
+                      {language}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Specializations */}
               <Box>
                 <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 600 }}>
-                  Facilities
+                  Specializations
                 </Typography>
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {facilities.map((facility) => (
+                  {specializations.map((specialization) => (
                     <FilterChip
-                      key={facility}
-                      label={facility}
-                      selected={selectedFacilities.includes(facility)}
-                      onClick={() => handleFacilityToggle(facility)}
+                      key={specialization}
+                      label={specialization}
+                      selected={selectedSpecializations.includes(specialization)}
+                      onClick={() => handleSpecializationToggle(specialization)}
                       size="small"
                     />
                   ))}
@@ -575,12 +796,12 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
             </Stack>
           </AccordionDetails>
         </Accordion>
-      </Fade>
+      </Box>
 
       <Divider sx={{ my: 2 }} />
 
       {/* Sort Options */}
-      <Fade in={true} timeout={1100}>
+      <Fade in={true} timeout={isInitialLoad ? 1100 : 0}>
         <Accordion defaultExpanded sx={{ boxShadow: 'none', '&:before': { display: 'none' } }}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
@@ -612,10 +833,11 @@ const SearchSortingPanel = ({ onFiltersChange, onSortChange }) => {
 
   return (
     <ThemeProvider theme={bodimaTheme}>
-      {/* Mobile Filter Button */}
+      {/* Mobile Filter Button - Now hides when drawer is open */}
       {isMobile && (
         <MobileFilterButton
           onClick={() => setMobileDrawerOpen(true)}
+          isDrawerOpen={mobileDrawerOpen}
         >
           <TuneIcon />
         </MobileFilterButton>
