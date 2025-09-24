@@ -226,7 +226,7 @@ const Footer = () => {
                             filter: 'brightness(2)',
                           }}
                         >
-                          BODIMA.lk
+                          OUTSOURCE.COM
                         </Typography>
                       </Box>
                     </FloatingLogo>
