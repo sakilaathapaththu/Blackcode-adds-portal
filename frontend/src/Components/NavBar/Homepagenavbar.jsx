@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Add this import
 import {
   AppBar,
   Toolbar,
@@ -234,6 +235,7 @@ const LoginButton = styled(Button)(({ theme }) => ({
 }));
 
 const HomepageNavbar = () => {
+  const navigate = useNavigate(); // Add this hook
   const [languageAnchor, setLanguageAnchor] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -262,8 +264,10 @@ const HomepageNavbar = () => {
     setMobileOpen(!mobileOpen);
   };
 
+  // Updated login handler to navigate to Login page
   const handleLoginClick = () => {
-    console.log('Login clicked!');
+    navigate('/login'); // Navigate to the login page
+    setMobileOpen(false); // Close mobile drawer if open
   };
 
   const navigationItems = [
@@ -450,7 +454,7 @@ const HomepageNavbar = () => {
       >
         <Toolbar sx={{ px: { xs: 2, lg: 4 }, py: 0.5, minHeight: '64px' }}>
           {/* Logo */}
-          <AnimatedLogo sx={{ mr: 4 }}>
+          <AnimatedLogo sx={{ mr: 4 }} onClick={() => navigate('/')}>
             <Avatar
               className="logo-icon"
               sx={{
@@ -475,7 +479,7 @@ const HomepageNavbar = () => {
                 letterSpacing: '-0.02em'
               }}
             >
-              BODIMA.lk
+              OUTSOURCE
             </Typography>
           </AnimatedLogo>
 
