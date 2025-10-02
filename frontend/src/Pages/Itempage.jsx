@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
+import ItemForm from "../Components/Items/ItemForm";
 
 const API_URL = "http://localhost:5000/api/items";
 
-export default function ItemManager() {
+export default function Itempage() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -16,8 +17,8 @@ export default function ItemManager() {
   const [items, setItems] = useState([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false); // controls popup
 
-  // Fetch items on load
   useEffect(() => {
     fetchItems();
   }, []);
@@ -52,8 +53,6 @@ export default function ItemManager() {
       if (posterImage) {
         data.append("posterImage", posterImage);
       }
-
-      // Convert specializations to JSON string
       data.set("specializations", JSON.stringify(formData.specializations.split(",")));
 
       await axios.post(API_URL, data, {
@@ -70,8 +69,8 @@ export default function ItemManager() {
         specializations: "",
       });
       setPosterImage(null);
-
-      fetchItems(); // refresh list
+      setIsFormOpen(false); // close modal after submit
+      fetchItems();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create item");
     }
@@ -79,60 +78,35 @@ export default function ItemManager() {
 
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "auto" }}>
-      <h2>Create Item</h2>
+      <button
+        onClick={() => setIsFormOpen(true)}
+        style={{
+          background: "#007bff",
+          color: "#fff",
+          padding: "10px 15px",
+          border: "none",
+          borderRadius: "5px",
+          cursor: "pointer",
+          marginBottom: "20px",
+        }}
+      >
+        📢 Post Your AD
+      </button>
+
       {error && <p style={{ color: "red" }}>⚠️ {error}</p>}
       {success && <p style={{ color: "green" }}>✅ {success}</p>}
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "10px" }}>
-        <input
-          type="text"
-          name="title"
-          placeholder="Title"
-          value={formData.title}
-          onChange={handleChange}
-          required
+      {isFormOpen && (
+        <ItemForm
+          formData={formData}
+          handleChange={handleChange}
+          handleFileChange={handleFileChange}
+          handleSubmit={handleSubmit}
+          onClose={() => setIsFormOpen(false)}
         />
-        <textarea
-          name="description"
-          placeholder="Description"
-          value={formData.description}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="category"
-          placeholder="Category"
-          value={formData.category}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="number"
-          name="price"
-          placeholder="Price"
-          value={formData.price}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="text"
-          name="deliveryTime"
-          placeholder="Delivery Time (e.g. 2 Days)"
-          value={formData.deliveryTime}
-          onChange={handleChange}
-        />
-        <input
-          type="text"
-          name="specializations"
-          placeholder="Specializations (comma separated)"
-          value={formData.specializations}
-          onChange={handleChange}
-        />
-        <input type="file" onChange={handleFileChange} accept="image/*" />
-        <button type="submit">Create Item</button>
-      </form>
+      )}
 
-      <h2 style={{ marginTop: "30px" }}>Items</h2>
+      <h2>Items</h2>
       {items.length === 0 ? (
         <p>No items found</p>
       ) : (
@@ -160,7 +134,6 @@ export default function ItemManager() {
               <p>
                 <b>Specializations:</b> {item.specializations?.join(", ")}
               </p>
-              {/* Display image */}
               <img
                 src={`${API_URL}/${item._id}/poster`}
                 alt="poster"

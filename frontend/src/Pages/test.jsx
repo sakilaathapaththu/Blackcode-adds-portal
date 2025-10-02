@@ -18,13 +18,27 @@ import {
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
 import axios from "axios";
+import ItemForm from "../Components/Items/ItemForm";
 
 const API_URL = "http://localhost:5000/api/items";
 
-export default function Marketplace() {
+export default function ItemsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false); // control form modal
+
+  // Form state
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    price: "",
+    deliveryTime: "",
+    specializations: "",
+  });
+  const [posterImage, setPosterImage] = useState(null);
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     const fetchItems = async () => {
@@ -40,6 +54,56 @@ export default function Marketplace() {
     };
     fetchItems();
   }, []);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    setPosterImage(e.target.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    try {
+      const data = new FormData();
+      for (let key in formData) {
+        data.append(key, formData[key]);
+      }
+      if (posterImage) {
+        data.append("posterImage", posterImage);
+      }
+      data.set(
+        "specializations",
+        JSON.stringify(formData.specializations.split(","))
+      );
+
+      await axios.post(API_URL, data, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      setSuccess("Item created successfully!");
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        price: "",
+        deliveryTime: "",
+        specializations: "",
+      });
+      setPosterImage(null);
+      setIsFormOpen(false); // close modal after submit
+
+      // Refresh items list
+      const res = await axios.get(API_URL);
+      setItems(res.data);
+    } catch (err) {
+      setError(err.response?.data?.error || "Failed to create item");
+    }
+  };
 
   if (loading) {
     return (
@@ -72,6 +136,21 @@ export default function Marketplace() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Assignment Helpers Marketplace
           </Typography>
+
+          {/* Post Your AD Button */}
+          <button
+            onClick={() => setIsFormOpen(true)}
+            style={{
+              background: "#007bff",
+              color: "#fff",
+              padding: "10px 15px",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            📢 Post Your AD
+          </button>
         </Toolbar>
       </AppBar>
 
@@ -91,7 +170,6 @@ export default function Marketplace() {
                   },
                 }}
               >
-                {/* Poster Image from backend */}
                 <CardMedia
                   component="img"
                   height="180"
@@ -103,7 +181,6 @@ export default function Marketplace() {
                   }}
                 />
 
-                {/* Card Content */}
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Chip
                     label={item.category}
@@ -111,26 +188,14 @@ export default function Marketplace() {
                     size="small"
                     sx={{ mb: 1 }}
                   />
-
                   <Typography variant="h6" gutterBottom>
                     {item.title}
                   </Typography>
-
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                     {item.description}
                   </Typography>
 
-                  {/* Provider info (hardcoded for now) */}
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{ mb: 1 }}
-                  >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                     <Avatar
                       src="https://randomuser.me/api/portraits/men/32.jpg"
                       alt="Provider"
@@ -139,44 +204,25 @@ export default function Marketplace() {
                     <Typography variant="body2">John Doe</Typography>
                   </Stack>
 
-                  {/* Delivery + Price */}
                   <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                       <Timer fontSize="small" />
-                      <Typography variant="body2">
-                        {item.deliveryTime}
-                      </Typography>
+                      <Typography variant="body2">{item.deliveryTime}</Typography>
                     </Stack>
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                       <AttachMoney fontSize="small" />
-                      <Typography variant="body2">
-                        {item.price.toLocaleString()} LKR
-                      </Typography>
+                      <Typography variant="body2">{item.price.toLocaleString()} LKR</Typography>
                     </Stack>
                   </Stack>
 
-                  {/* Rating (hardcoded for now) */}
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{ mb: 1 }}
-                  >
+                  <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
                     <Rating value={4.5} precision={0.5} size="small" readOnly />
                     <Typography variant="body2">(12 reviews)</Typography>
                   </Stack>
 
-                  {/* Specializations */}
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}
-                  >
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
                     {item.specializations?.map((spec, idx) => (
-                      <Chip
-                        key={idx}
-                        label={spec}
-                        size="small"
-                        color="secondary"
-                      />
+                      <Chip key={idx} label={spec} size="small" color="secondary" />
                     ))}
                   </Box>
                 </CardContent>
@@ -191,6 +237,17 @@ export default function Marketplace() {
           ))}
         </Grid>
       </Container>
+
+      {/* Modal Popup */}
+      {isFormOpen && (
+        <ItemForm
+          formData={formData}
+          handleChange={handleChange}
+          handleFileChange={handleFileChange}
+          handleSubmit={handleSubmit}
+          onClose={() => setIsFormOpen(false)}
+        />
+      )}
     </Box>
   );
 }
