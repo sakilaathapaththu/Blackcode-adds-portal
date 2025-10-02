@@ -31,7 +31,7 @@ const items = [
     provider: "John Doe",
     providerImg: "https://randomuser.me/api/portraits/men/32.jpg",
     specializations: ["Python", "Data Structures", "Machine Learning"],
-    image:
+    Posterimage:
       "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg",
   },
   {
@@ -46,7 +46,7 @@ const items = [
     provider: "Jane Smith",
     providerImg: "https://randomuser.me/api/portraits/women/44.jpg",
     specializations: ["Business", "Report Writing", "Analysis"],
-    image: "https://source.unsplash.com/400x200/?essay",
+    Posterimage: "https://source.unsplash.com/400x200/?essay",
   },
   {
     id: 3,
@@ -60,7 +60,7 @@ const items = [
     provider: "Alex Johnson",
     providerImg: "https://randomuser.me/api/portraits/men/54.jpg",
     specializations: ["Excel", "Python", "Data Visualization"],
-    image: "https://source.unsplash.com/400x200/?data",
+    Posterimage: "https://source.unsplash.com/400x200/?data",
   },
   {
     id: 4,
@@ -74,7 +74,7 @@ const items = [
     provider: "Emily Davis",
     providerImg: "https://randomuser.me/api/portraits/women/68.jpg",
     specializations: ["Engineering", "Project Management", "Research"],
-    image: "https://source.unsplash.com/400x200/?engineering",
+    Posterimage: "https://source.unsplash.com/400x200/?engineering",
   },
 ];
 
@@ -110,7 +110,7 @@ export default function Test() {
                 <CardMedia
                   component="img"
                   height="180"
-                  image={item.image}
+                  image={item.Posterimage}
                   alt={item.title}
                 />
 

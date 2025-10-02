@@ -31,7 +31,7 @@ const items = [
     provider: 'John Doe',
     providerImg: 'https://randomuser.me/api/portraits/men/32.jpg',
     skills: ['Python', 'Data Structures', 'Machine Learning'],
-image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg', // Demo image
+Posterimage: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg', // Demo image
   },
   {
     id: 2,
@@ -45,7 +45,7 @@ image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.s
     provider: 'Jane Smith',
     providerImg: 'https://randomuser.me/api/portraits/women/44.jpg',
     skills: ['Business', 'Report Writing', 'Analysis'],
-    image: 'https://source.unsplash.com/400x200/?essay',
+    Posterimage: 'https://source.unsplash.com/400x200/?essay',
   },
   {
     id: 3,
@@ -59,7 +59,7 @@ image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.s
     provider: 'Alex Johnson',
     providerImg: 'https://randomuser.me/api/portraits/men/54.jpg',
     skills: ['Excel', 'Python', 'Data Visualization'],
-    image: 'https://source.unsplash.com/400x200/?data',
+    Posterimage: 'https://source.unsplash.com/400x200/?data',
   },
   {
     id: 4,
@@ -73,7 +73,7 @@ image: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.s
     provider: 'Emily Davis',
     providerImg: 'https://randomuser.me/api/portraits/women/68.jpg',
     skills: ['Engineering', 'Project Management', 'Research'],
-    image: 'https://source.unsplash.com/400x200/?engineering',
+    Posterimage: 'https://source.unsplash.com/400x200/?engineering',
   },
 ];
 
