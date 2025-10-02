@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -14,71 +14,56 @@ import {
   Stack,
   Avatar,
   Rating,
+  CircularProgress,
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
+import axios from "axios";
 
-// Sample data for posts
-const items = [
-  {
-    id: 1,
-    title: "Python Programming Assignment",
-    description: "Complete your data analysis project using.",
-    category: "Programming",
-    price: 1500,
-    deliveryTime: "2 Days",
-    rating: 4.5,
-    reviews: 12,
-    provider: "John Doe",
-    providerImg: "https://randomuser.me/api/portraits/men/32.jpg",
-    specializations: ["Python", "Data Structures", "Machine Learning"],
-    Posterimage:
-      "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg",
-  },
-  {
-    id: 2,
-    title: "Business Management Essay",
-    description: "Complete your data analysis project using.",
-    category: "Academic Writing",
-    price: 2000,
-    deliveryTime: "3 Days",
-    rating: 4.0,
-    reviews: 8,
-    provider: "Jane Smith",
-    providerImg: "https://randomuser.me/api/portraits/women/44.jpg",
-    specializations: ["Business", "Report Writing", "Analysis"],
-    Posterimage: "https://source.unsplash.com/400x200/?essay",
-  },
-  {
-    id: 3,
-    title: "Data Analysis Project",
-    description: "Complete your data analysis project using.",
-    category: "Data Science",
-    price: 2500,
-    deliveryTime: "5 Days",
-    rating: 5.0,
-    reviews: 20,
-    provider: "Alex Johnson",
-    providerImg: "https://randomuser.me/api/portraits/men/54.jpg",
-    specializations: ["Excel", "Python", "Data Visualization"],
-    Posterimage: "https://source.unsplash.com/400x200/?data",
-  },
-  {
-    id: 4,
-    title: "Final Year Project Guidance",
-    description: "Complete your data analysis project using.",
-    category: "Engineering",
-    price: 5000,
-    deliveryTime: "7 Days",
-    rating: 4.8,
-    reviews: 15,
-    provider: "Emily Davis",
-    providerImg: "https://randomuser.me/api/portraits/women/68.jpg",
-    specializations: ["Engineering", "Project Management", "Research"],
-    Posterimage: "https://source.unsplash.com/400x200/?engineering",
-  },
-];
+const API_URL = "http://localhost:5000/api/items";
 
-export default function Test() {
+export default function Marketplace() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get(API_URL);
+        setItems(res.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load items.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchItems();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ textAlign: "center", mt: 5 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       {/* Header */}
@@ -93,7 +78,7 @@ export default function Test() {
       <Container sx={{ mt: 4, mb: 4 }}>
         <Grid container spacing={4}>
           {items.map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item.id}>
+            <Grid item xs={12} sm={6} md={4} key={item._id}>
               <Card
                 sx={{
                   display: "flex",
@@ -106,12 +91,16 @@ export default function Test() {
                   },
                 }}
               >
-                {/* Post Image */}
+                {/* Poster Image from backend */}
                 <CardMedia
                   component="img"
                   height="180"
-                  image={item.Posterimage}
+                  image={`${API_URL}/${item._id}/poster`}
                   alt={item.title}
+                  onError={(e) => {
+                    e.target.src =
+                      "https://via.placeholder.com/400x200.png?text=No+Image";
+                  }}
                 />
 
                 {/* Card Content */}
@@ -135,6 +124,7 @@ export default function Test() {
                     {item.description}
                   </Typography>
 
+                  {/* Provider info (hardcoded for now) */}
                   <Stack
                     direction="row"
                     spacing={1}
@@ -142,13 +132,14 @@ export default function Test() {
                     sx={{ mb: 1 }}
                   >
                     <Avatar
-                      src={item.providerImg}
-                      alt={item.provider}
+                      src="https://randomuser.me/api/portraits/men/32.jpg"
+                      alt="Provider"
                       sx={{ width: 28, height: 28 }}
                     />
-                    <Typography variant="body2">{item.provider}</Typography>
+                    <Typography variant="body2">John Doe</Typography>
                   </Stack>
 
+                  {/* Delivery + Price */}
                   <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
                     <Stack direction="row" alignItems="center" spacing={0.5}>
                       <Timer fontSize="small" />
@@ -164,30 +155,25 @@ export default function Test() {
                     </Stack>
                   </Stack>
 
+                  {/* Rating (hardcoded for now) */}
                   <Stack
                     direction="row"
                     spacing={1}
                     alignItems="center"
                     sx={{ mb: 1 }}
                   >
-                    <Rating
-                      value={item.rating}
-                      precision={0.5}
-                      size="small"
-                      readOnly
-                    />
-                    <Typography variant="body2">
-                      ({item.reviews} reviews)
-                    </Typography>
+                    <Rating value={4.5} precision={0.5} size="small" readOnly />
+                    <Typography variant="body2">(12 reviews)</Typography>
                   </Stack>
 
+                  {/* Specializations */}
                   <Box
                     sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}
                   >
-                    {item.specializations.map((specialization) => (
+                    {item.specializations?.map((spec, idx) => (
                       <Chip
-                        key={specialization}
-                        label={specialization}
+                        key={idx}
+                        label={spec}
                         size="small"
                         color="secondary"
                       />
