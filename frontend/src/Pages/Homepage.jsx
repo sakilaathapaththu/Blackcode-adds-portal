@@ -3,7 +3,7 @@ import { Box } from "@mui/material";
 import Homepagenavbar from "../Components/NavBar/Homepagenavbar";
 import Sidebar from "../Components/Home/Sortingpanel";
 import Footer from "../Components/Home/Footer";
-import ItemPage from "../Components/Home/item";
+import ItemPage from "../Pages/Itempage";
 
 export default function Home() {
   return (
@@ -51,7 +51,7 @@ export default function Home() {
             flexShrink: 1,
             minWidth: 0, // Important: allows flex item to shrink below content size
             bgcolor: "background.paper",
-            borderRadius: 2,
+            borderRadius: 1,
             p: 2,
             boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
             overflow: "auto",
