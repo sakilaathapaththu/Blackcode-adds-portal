@@ -30,7 +30,7 @@ const items = [
     reviews: 12,
     provider: "John Doe",
     providerImg: "https://randomuser.me/api/portraits/men/32.jpg",
-    skills: ["Python", "Data Structures", "Machine Learning"],
+    specializations: ["Python", "Data Structures", "Machine Learning"],
     image:
       "https://upload.wikimedia.org/wikipedia/commons/c/c3/Python-logo-notext.svg",
   },
@@ -45,7 +45,7 @@ const items = [
     reviews: 8,
     provider: "Jane Smith",
     providerImg: "https://randomuser.me/api/portraits/women/44.jpg",
-    skills: ["Business", "Report Writing", "Analysis"],
+    specializations: ["Business", "Report Writing", "Analysis"],
     image: "https://source.unsplash.com/400x200/?essay",
   },
   {
@@ -59,7 +59,7 @@ const items = [
     reviews: 20,
     provider: "Alex Johnson",
     providerImg: "https://randomuser.me/api/portraits/men/54.jpg",
-    skills: ["Excel", "Python", "Data Visualization"],
+    specializations: ["Excel", "Python", "Data Visualization"],
     image: "https://source.unsplash.com/400x200/?data",
   },
   {
@@ -73,7 +73,7 @@ const items = [
     reviews: 15,
     provider: "Emily Davis",
     providerImg: "https://randomuser.me/api/portraits/women/68.jpg",
-    skills: ["Engineering", "Project Management", "Research"],
+    specializations: ["Engineering", "Project Management", "Research"],
     image: "https://source.unsplash.com/400x200/?engineering",
   },
 ];
@@ -184,10 +184,10 @@ export default function Test() {
                   <Box
                     sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}
                   >
-                    {item.skills.map((skill) => (
+                    {item.specializations.map((specialization) => (
                       <Chip
-                        key={skill}
-                        label={skill}
+                        key={specialization}
+                        label={specialization}
                         size="small"
                         color="secondary"
                       />
