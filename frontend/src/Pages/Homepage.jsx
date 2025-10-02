@@ -3,6 +3,7 @@ import { Box } from "@mui/material";
 import Homepagenavbar from "../Components/NavBar/Homepagenavbar";
 import Sidebar from "../Components/Home/Sortingpanel";
 import Footer from "../Components/Home/Footer";
+import ItemPage from "../Components/Home/item";
 
 export default function Home() {
   return (
@@ -25,16 +26,19 @@ export default function Home() {
         sx={{
           display: "flex",
           flexGrow: 1,
+          gap: 2,
           px: 2,
           py: 2,
+          maxWidth: "100%",
+          overflow: "hidden",
         }}
       >
-        {/* Sidebar (left side) */}
+        {/* Sidebar (left side) - Hidden on mobile */}
         <Box
           sx={{
-            width: { xs: "100%", md: "250px" }, // full width on mobile, fixed width on desktop
+            display: { xs: "none", md: "block" },
+            width: "320px", // Match the SearchPanelContainer width
             flexShrink: 0,
-            mr: { md: 2 }, // margin right on desktop
           }}
         >
           <Sidebar />
@@ -44,12 +48,16 @@ export default function Home() {
         <Box
           sx={{
             flexGrow: 1,
+            flexShrink: 1,
+            minWidth: 0, // Important: allows flex item to shrink below content size
             bgcolor: "background.paper",
             borderRadius: 2,
             p: 2,
             boxShadow: "0 2px 6px rgba(0,0,0,0.05)",
+            overflow: "auto",
           }}
         >
+          <ItemPage />
         </Box>
       </Box>
 
