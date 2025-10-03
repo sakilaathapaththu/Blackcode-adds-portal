@@ -1,10 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  CardMedia,
+  Box,
+  Chip,
+  Button,
+  Stack,
+  Avatar,
+  Rating,
+  CircularProgress,
+} from "@mui/material";
+import { Timer, AttachMoney } from "@mui/icons-material";
 import axios from "axios";
 import ItemForm from "../Components/Items/ItemForm";
+import ItemDetails from "../Components/Items/ItemDetails"; // 🔹 Import details modal
 
 const API_URL = "http://localhost:5000/api/items";
 
-export default function Itempage() {
+export default function ItemsPage() {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null); // 🔹 Track selected item
+
+  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -14,23 +40,22 @@ export default function Itempage() {
     specializations: "",
   });
   const [posterImage, setPosterImage] = useState(null);
-  const [items, setItems] = useState([]);
-  const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [isFormOpen, setIsFormOpen] = useState(false); // controls popup
 
   useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const res = await axios.get(API_URL);
+        setItems(res.data);
+      } catch (err) {
+        console.error(err);
+        setError("Failed to load items.");
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchItems();
   }, []);
-
-  const fetchItems = async () => {
-    try {
-      const res = await axios.get(API_URL);
-      setItems(res.data);
-    } catch (err) {
-      setError("Failed to fetch items");
-    }
-  };
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -53,7 +78,10 @@ export default function Itempage() {
       if (posterImage) {
         data.append("posterImage", posterImage);
       }
-      data.set("specializations", JSON.stringify(formData.specializations.split(",")));
+      data.set(
+        "specializations",
+        JSON.stringify(formData.specializations.split(","))
+      );
 
       await axios.post(API_URL, data, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -69,33 +97,180 @@ export default function Itempage() {
         specializations: "",
       });
       setPosterImage(null);
-      setIsFormOpen(false); // close modal after submit
-      fetchItems();
+      setIsFormOpen(false);
+
+      // Refresh items list
+      const res = await axios.get(API_URL);
+      setItems(res.data);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create item");
     }
   };
 
-  return (
-    <div style={{ padding: "20px", maxWidth: "800px", margin: "auto" }}>
-      <button
-        onClick={() => setIsFormOpen(true)}
-        style={{
-          background: "#007bff",
-          color: "#fff",
-          padding: "10px 15px",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-          marginBottom: "20px",
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
         }}
       >
-        📢 Post Your AD
-      </button>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
-      {error && <p style={{ color: "red" }}>⚠️ {error}</p>}
-      {success && <p style={{ color: "green" }}>✅ {success}</p>}
+  if (error) {
+    return (
+      <Box sx={{ textAlign: "center", mt: 5 }}>
+        <Typography color="error">{error}</Typography>
+      </Box>
+    );
+  }
 
+  return (
+    <Box sx={{ flexGrow: 1 }}>
+      {/* Header */}
+      <AppBar position="static" color="primary">
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1 }}>
+            Assignment Helpers Marketplace
+          </Typography>
+
+          {/* Post Your AD Button */}
+          <button
+            onClick={() => setIsFormOpen(true)}
+            style={{
+              background: "#007bff",
+              color: "#fff",
+              padding: "10px 15px",
+              border: "none",
+              borderRadius: "5px",
+              cursor: "pointer",
+            }}
+          >
+            📢 Post Your AD
+          </button>
+        </Toolbar>
+      </AppBar>
+
+      <Container sx={{ mt: 4, mb: 4 }}>
+        <Grid container spacing={4}>
+          {items.map((item) => (
+            <Grid item xs={12} sm={6} md={4} key={item._id}>
+              <Card
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  height: "100%",
+                  transition: "transform 0.3s, box-shadow 0.3s",
+                  "&:hover": {
+                    transform: "translateY(-5px)",
+                    boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
+                  },
+                }}
+              >
+                <CardMedia
+                  component="img"
+                  height="180"
+                  image={`${API_URL}/${item._id}/poster`}
+                  alt={item.title}
+                  onError={(e) => {
+                    e.target.src =
+                      "https://via.placeholder.com/400x200.png?text=No+Image";
+                  }}
+                />
+
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Chip
+                    label={item.category}
+                    color="primary"
+                    size="small"
+                    sx={{ mb: 1 }}
+                  />
+                  <Typography variant="h6" gutterBottom>
+                    {item.title}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{ mb: 2 }}
+                  >
+                    {item.description}
+                  </Typography>
+
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ mb: 1 }}
+                  >
+                    <Avatar
+                      src="https://randomuser.me/api/portraits/men/32.jpg"
+                      alt="Provider"
+                      sx={{ width: 28, height: 28 }}
+                    />
+                    <Typography variant="body2">John Doe</Typography>
+                  </Stack>
+
+                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <Timer fontSize="small" />
+                      <Typography variant="body2">
+                        {item.deliveryTime}
+                      </Typography>
+                    </Stack>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
+                      <AttachMoney fontSize="small" />
+                      <Typography variant="body2">
+                        {item.price.toLocaleString()} LKR
+                      </Typography>
+                    </Stack>
+                  </Stack>
+
+                  <Stack
+                    direction="row"
+                    spacing={1}
+                    alignItems="center"
+                    sx={{ mb: 1 }}
+                  >
+                    <Rating value={4.5} precision={0.5} size="small" readOnly />
+                    <Typography variant="body2">(12 reviews)</Typography>
+                  </Stack>
+
+                  <Box
+                    sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}
+                  >
+                    {item.specializations?.map((spec, idx) => (
+                      <Chip
+                        key={idx}
+                        label={spec}
+                        size="small"
+                        color="secondary"
+                      />
+                    ))}
+                  </Box>
+                </CardContent>
+
+                <Box sx={{ p: 2 }}>
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    color="primary"
+                    onClick={() => setSelectedItem(item)} // 🔹 Open details modal
+                  >
+                    View Details
+                  </Button>
+                </Box>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+      </Container>
+
+      {/* Modal Popup */}
       {isFormOpen && (
         <ItemForm
           formData={formData}
@@ -106,44 +281,13 @@ export default function Itempage() {
         />
       )}
 
-      <h2>Items</h2>
-      {items.length === 0 ? (
-        <p>No items found</p>
-      ) : (
-        <div style={{ display: "grid", gap: "20px" }}>
-          {items.map((item) => (
-            <div
-              key={item._id}
-              style={{
-                border: "1px solid #ddd",
-                padding: "10px",
-                borderRadius: "8px",
-              }}
-            >
-              <h3>{item.title}</h3>
-              <p>{item.description}</p>
-              <p>
-                <b>Category:</b> {item.category}
-              </p>
-              <p>
-                <b>Price:</b> Rs.{item.price}
-              </p>
-              <p>
-                <b>Delivery Time:</b> {item.deliveryTime}
-              </p>
-              <p>
-                <b>Specializations:</b> {item.specializations?.join(", ")}
-              </p>
-              <img
-                src={`${API_URL}/${item._id}/poster`}
-                alt="poster"
-                style={{ maxWidth: "200px", marginTop: "10px" }}
-                onError={(e) => (e.target.style.display = "none")}
-              />
-            </div>
-          ))}
-        </div>
+      {/* Details Modal */}
+      {selectedItem && (
+        <ItemDetails
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+        />
       )}
-    </div>
+    </Box>
   );
 }
