@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Add this import
+import React, { useState, useEffect, useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AppBar,
   Toolbar,
@@ -30,7 +30,9 @@ import {
   ShoppingBag as ShoppingBagIcon,
   Login as LoginIcon,
 } from '@mui/icons-material';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // ✅ added
 import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
+import { AuthContext } from '../../Context/AuthContext'; // ✅ added
 
 // Updated theme with cohesive matching color palette
 const theme = createTheme({
@@ -235,7 +237,8 @@ const LoginButton = styled(Button)(({ theme }) => ({
 }));
 
 const HomepageNavbar = () => {
-  const navigate = useNavigate(); // Add this hook
+  const navigate = useNavigate();
+  const { user, logout } = useContext(AuthContext); // ✅ auth state
   const [languageAnchor, setLanguageAnchor] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -268,6 +271,17 @@ const HomepageNavbar = () => {
   const handleLoginClick = () => {
     navigate('/auth'); // Navigate to the login page
     setMobileOpen(false); // Close mobile drawer if open
+  };
+
+  // ✅ added: logout + profile handlers
+  const handleLogout = () => {
+    logout();
+    setMobileOpen(false);
+    navigate('/');
+  };
+  const goProfile = () => {
+    setMobileOpen(false);
+    navigate('/profile');
   };
 
   const navigationItems = [
@@ -362,40 +376,95 @@ const HomepageNavbar = () => {
         
         <Divider sx={{ my: 2 }} />
         
-        <ListItem 
-          button 
-          onClick={handleLoginClick}
-          sx={{ 
-            mb: 1,
-            borderRadius: 2,
-            border: '2px solid',
-            borderColor: 'primary.main',
-            '&:hover': { 
-              bgcolor: 'primary.main',
-              color: 'white',
-              transform: 'translateX(4px)',
-              '& .MuiListItemIcon-root': {
+        {/* ✅ Conditional login vs profile/logout in drawer */}
+        {!user ? (
+          <ListItem 
+            button 
+            onClick={handleLoginClick}
+            sx={{ 
+              mb: 1,
+              borderRadius: 2,
+              border: '2px solid',
+              borderColor: 'primary.main',
+              '&:hover': { 
+                bgcolor: 'primary.main',
                 color: 'white',
+                transform: 'translateX(4px)',
+                '& .MuiListItemIcon-root': {
+                  color: 'white',
+                },
               },
-            },
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
-        >
-          <ListItemIcon sx={{ 
-            color: 'primary.main',
-            minWidth: 40,
-            transition: 'all 0.4s ease'
-          }}>
-            <LoginIcon />
-          </ListItemIcon>
-          <ListItemText 
-            primary="Login"
-            primaryTypographyProps={{ 
-              fontWeight: 600,
-              fontSize: '0.9rem'
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
-          />
-        </ListItem>
+          >
+            <ListItemIcon sx={{ 
+              color: 'primary.main',
+              minWidth: 40,
+              transition: 'all 0.4s ease'
+            }}>
+              <LoginIcon />
+            </ListItemIcon>
+            <ListItemText 
+              primary="Login"
+              primaryTypographyProps={{ 
+                fontWeight: 600,
+                fontSize: '0.9rem'
+              }}
+            />
+          </ListItem>
+        ) : (
+          <>
+            <ListItem 
+              button 
+              onClick={goProfile}
+              sx={{ 
+                mb: 1,
+                borderRadius: 2,
+                '&:hover': { 
+                  bgcolor: 'action.hover',
+                  transform: 'translateX(4px)'
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <ListItemIcon sx={{ color: 'text.secondary', minWidth: 40 }}>
+                <AccountCircleIcon />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Profile"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+              />
+            </ListItem>
+
+            <ListItem 
+              button 
+              onClick={handleLogout}
+              sx={{ 
+                mb: 1,
+                borderRadius: 2,
+                border: '2px solid',
+                borderColor: 'error.main',
+                '&:hover': { 
+                  bgcolor: 'error.main',
+                  color: 'white',
+                  transform: 'translateX(4px)',
+                  '& .MuiListItemIcon-root': {
+                    color: 'white',
+                  },
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <ListItemIcon sx={{ color: 'error.main', minWidth: 40 }}>
+                <CloseIcon />
+              </ListItemIcon>
+              <ListItemText 
+                primary="Logout"
+                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+              />
+            </ListItem>
+          </>
+        )}
         
         <ListItem 
           button 
@@ -532,13 +601,33 @@ const HomepageNavbar = () => {
                   {selectedLanguage.flag} {selectedLanguage.label}
                 </Button>
 
-                {/* Login Button */}
-                <LoginButton onClick={handleLoginClick}>
-                  <Box className="login-content">
-                    <LoginIcon className="login-icon" />
-                    Login
-                  </Box>
-                </LoginButton>
+                {/* ✅ Conditional Login vs Profile/Logout on desktop */}
+                {!user ? (
+                  <LoginButton onClick={handleLoginClick}>
+                    <Box className="login-content">
+                      <LoginIcon className="login-icon" />
+                      Login
+                    </Box>
+                  </LoginButton>
+                ) : (
+                  <>
+                    <Button
+                      onClick={goProfile}
+                      startIcon={<AccountCircleIcon />}
+                      sx={{ fontWeight: 600, mr: 1 }}
+                    >
+                      {user?.name || 'Profile'}
+                    </Button>
+                    <Button
+                      onClick={handleLogout}
+                      color="error"
+                      variant="outlined"
+                      sx={{ fontWeight: 700, borderWidth: 2 }}
+                    >
+                      Logout
+                    </Button>
+                  </>
+                )}
 
                 {/* POST YOUR AD Button */}
                 <CTAButton

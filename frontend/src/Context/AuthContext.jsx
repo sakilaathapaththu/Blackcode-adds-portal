@@ -1,25 +1,23 @@
-import React, { createContext, useState, useEffect } from "react";
-import { saveToken, getToken, removeToken } from "../Utils/jwt";
+// src/Context/AuthContext.jsx
+import React, { createContext, useEffect, useState, useMemo } from "react";
+import { saveAuth, loadAuth, clearAuth } from "../Utils/authStore";
 
-export const AuthContext = createContext();
+export const AuthContext = createContext({ user: null });
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+export function AuthProvider({ children }) {
+  const [auth, setAuth] = useState(() => loadAuth()); // { token, user }
 
   useEffect(() => {
-    const token = getToken();
-    if (token) setUser({ token });
-  }, []);
+    if (auth) saveAuth(auth);
+  }, [auth]);
 
-  const login = (token) => {
-    saveToken(token);
-    setUser({ token });
-  };
-
+  const login = (token, user) => setAuth({ token, user });
   const logout = () => {
-    removeToken();
-    setUser(null);
+    clearAuth();
+    setAuth(null);
   };
 
-  return <AuthContext.Provider value={{ user, login, logout }}>{children}</AuthContext.Provider>;
-};
+  const value = useMemo(() => ({ user: auth?.user || null, token: auth?.token || null, login, logout }), [auth]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}

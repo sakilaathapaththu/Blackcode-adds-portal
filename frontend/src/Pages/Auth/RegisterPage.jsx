@@ -1,21 +1,30 @@
+// src/Pages/Auth/RegisterPage.jsx
 import React, { useState } from "react";
-import { Box, Button, TextField, Typography, Link, Paper, CircularProgress } from "@mui/material";
-import { Formik, Form } from "formik";
-import { registerSchema } from "../../Utils/validate";
+import { Paper, Typography, TextField, Button, CircularProgress, Link } from "@mui/material";
 import { registerUser } from "../../Api/Auth";
 
-const Register = ({ onSwitch }) => {
+export default function RegisterPage({ onSwitch }) {
+  const [form, setForm] = useState({
+    name: "",
+    username: "",
+    email: "",
+    phone: "",
+    password: "",
+  });
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (values, { resetForm }) => {
+  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+
+  const onSubmit = async (e) => {
+    e.preventDefault(); // prevent page reload
     setLoading(true);
     try {
-      await registerUser(values);
+      await registerUser(form); // role added in API helper
       alert("Registration successful! Please log in.");
-      onSwitch("login");
-      resetForm();
+      onSwitch?.("login");
+      setForm({ name: "", username: "", email: "", phone: "", password: "" });
     } catch (err) {
-      alert("Error: " + err.response?.data?.message);
+      alert("Error: " + (err.message || "Registration failed"));
     } finally {
       setLoading(false);
     }
@@ -27,60 +36,24 @@ const Register = ({ onSwitch }) => {
         Create Your Account
       </Typography>
 
-      <Formik
-        initialValues={{ name: "", email: "", password: "" }}
-        validationSchema={registerSchema}
-        onSubmit={handleSubmit}
-      >
-        {({ values, errors, touched, handleChange }) => (
-          <Form>
-            <TextField
-              fullWidth
-              name="name"
-              label="Full Name"
-              value={values.name}
-              onChange={handleChange}
-              error={touched.name && !!errors.name}
-              helperText={touched.name && errors.name}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              name="email"
-              label="Email"
-              value={values.email}
-              onChange={handleChange}
-              error={touched.email && !!errors.email}
-              helperText={touched.email && errors.email}
-              sx={{ mb: 2 }}
-            />
-            <TextField
-              fullWidth
-              name="password"
-              label="Password"
-              type="password"
-              value={values.password}
-              onChange={handleChange}
-              error={touched.password && !!errors.password}
-              helperText={touched.password && errors.password}
-              sx={{ mb: 2 }}
-            />
+      <form onSubmit={onSubmit}>
+        <TextField fullWidth name="name" label="Full Name" value={form.name} onChange={onChange} required sx={{ mb: 2 }} />
+        <TextField fullWidth name="username" label="Username" value={form.username} onChange={onChange} required sx={{ mb: 2 }} />
+        <TextField fullWidth name="email" label="Email" type="email" value={form.email} onChange={onChange} required sx={{ mb: 2 }} />
+        <TextField fullWidth name="phone" label="Phone" value={form.phone} onChange={onChange} required sx={{ mb: 2 }} />
+        <TextField fullWidth name="password" label="Password" type="password" value={form.password} onChange={onChange} required sx={{ mb: 2 }} />
 
-            <Button type="submit" fullWidth variant="contained" disabled={loading} sx={{ py: 1.2, fontWeight: 600 }}>
-              {loading ? <CircularProgress size={24} /> : "Sign Up"}
-            </Button>
+        <Button type="submit" fullWidth variant="contained" disabled={loading} sx={{ py: 1.2, fontWeight: 600 }}>
+          {loading ? <CircularProgress size={24} /> : "Sign Up"}
+        </Button>
 
-            <Typography align="center" sx={{ mt: 2 }}>
-              Already have an account?{" "}
-              <Link component="button" onClick={() => onSwitch("login")}>
-                Login
-              </Link>
-            </Typography>
-          </Form>
-        )}
-      </Formik>
+        <Typography align="center" sx={{ mt: 2 }}>
+          Already have an account?{" "}
+          <Link component="button" onClick={() => onSwitch?.("login")}>
+            Login
+          </Link>
+        </Typography>
+      </form>
     </Paper>
   );
-};
-
-export default Register;
+}

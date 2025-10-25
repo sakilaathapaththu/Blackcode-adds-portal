@@ -1,18 +1,19 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import { CssBaseline, Box } from "@mui/material";
+
 import { AuthProvider } from "./Context/AuthContext";
+import ProtectedRoute from "./Components/ProtectedRoute";
 
 import Home from "./Pages/Homepage";
+import Dashboard from "./Pages/Dashboard";
+import Profile from "./Pages/Profile";
 import HomepageNavbar from "./Components/NavBar/Homepagenavbar";
-import Footer from "./Components/Home/Footer";
 import AuthPage from "./Pages/Auth/AuthPage";
 
 const theme = createTheme({
-  palette: {
-    mode: "light",
-    background: { default: "#F6F9FC" },
-  },
+  palette: { mode: "light", background: { default: "#F6F9FC" } },
   shape: { borderRadius: 12 },
 });
 
@@ -20,7 +21,6 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      {/* ✅ Wrap with AuthProvider */}
       <AuthProvider>
         <BrowserRouter>
           <HomepageNavbar />
@@ -28,10 +28,20 @@ export default function App() {
             <Routes>
               <Route path="/" element={<Home />} />
               <Route path="/auth" element={<AuthPage />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute role="provider">
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </Box>
-          <Footer />
+          {/* If your Footer is a component, include it here */}
+          {/* <Footer /> */}
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>

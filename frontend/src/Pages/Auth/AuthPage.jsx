@@ -1,18 +1,14 @@
+// src/Pages/Auth/AuthPage.jsx
 import React, { useState } from "react";
-import Login from "../Auth/LoginPage";
-import Register from "../Auth/RegisterPage";
+import LoginPage from "../Auth/LoginPage";       // default import
+import RegisterPage from "../Auth/RegisterPage"; // default import
 
-const AuthPage = () => {
-  const [mode, setMode] = useState("login");
-
-  const handleSwitch = (target) => setMode(target);
-
+export default function AuthPage() {
+  const [mode, setMode] = useState("register"); // or "login"
   return (
     <>
-      {mode === "login" && <Login onSwitch={handleSwitch} />}
-      {mode === "register" && <Register onSwitch={handleSwitch} />}
+      {mode === "login" && <LoginPage onSwitch={setMode} />}
+      {mode === "register" && <RegisterPage onSwitch={setMode} />}
     </>
   );
-};
-
-export default AuthPage;
+}
