@@ -19,7 +19,7 @@ import {
 import { Timer, AttachMoney } from "@mui/icons-material";
 import axios from "axios";
 import ItemForm from "../Components/Items/ItemForm";
-import ItemDetails from "../Components/Items/ItemDetails"; // 🔹 Import details modal
+import ItemDetails from "../Components/Items/ItemDetailsview"; // 🔹 Import details modal
 
 const API_URL = "http://localhost:5000/api/items";
 
