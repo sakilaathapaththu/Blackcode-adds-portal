@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import {
   AppBar,
   Toolbar,
@@ -19,19 +19,18 @@ import {
 import { Timer, AttachMoney } from "@mui/icons-material";
 import axios from "axios";
 import ItemForm from "../Components/Items/ItemForm";
-import ItemDetails from "../Components/Items/ItemDetailsview";
-import { AuthContext } from "../Context/AuthContext"; // ✅ Import user context
+import ItemDetails from "../Components/Items/ItemDetailsview"; // 🔹 Import details modal
 
 const API_URL = "http://localhost:5000/api/items";
 
 export default function ItemsPage() {
-  const { user } = useContext(AuthContext); // ✅ Get logged-in user info
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
+  const [selectedItem, setSelectedItem] = useState(null); // 🔹 Track selected item
 
+  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -100,28 +99,12 @@ export default function ItemsPage() {
       setPosterImage(null);
       setIsFormOpen(false);
 
+      // Refresh items list
       const res = await axios.get(API_URL);
       setItems(res.data);
     } catch (err) {
       setError(err.response?.data?.error || "Failed to create item");
     }
-  };
-
-  // ✅ Generate random color for avatar background
-  const getRandomColor = (name) => {
-    const colors = [
-      "#FFB6C1",
-      "#FFA07A",
-      "#FFD700",
-      "#90EE90",
-      "#87CEFA",
-      "#9370DB",
-      "#FF69B4",
-      "#40E0D0",
-    ];
-    if (!name) return "#ccc";
-    const index = name.charCodeAt(0) % colors.length;
-    return colors[index];
   };
 
   if (loading) {
@@ -166,7 +149,6 @@ export default function ItemsPage() {
               border: "none",
               borderRadius: "5px",
               cursor: "pointer",
-              marginLeft: "15px",
             }}
           >
             📢 Post Your AD
@@ -219,7 +201,6 @@ export default function ItemsPage() {
                     {item.description}
                   </Typography>
 
-                  {/* ✅ Show user's avatar and name instead of John Doe */}
                   <Stack
                     direction="row"
                     spacing={1}
@@ -227,21 +208,11 @@ export default function ItemsPage() {
                     sx={{ mb: 1 }}
                   >
                     <Avatar
-                      sx={{
-                        bgcolor: getRandomColor(user?.name),
-                        width: 28,
-                        height: 28,
-                        fontSize: 14,
-                        fontWeight: 600,
-                      }}
-                    >
-                      {user?.name
-                        ? user.name.charAt(0).toUpperCase()
-                        : "?"}
-                    </Avatar>
-                    <Typography variant="body2">
-                      {user?.name || "Unknown User"}
-                    </Typography>
+                      src="https://randomuser.me/api/portraits/men/32.jpg"
+                      alt="Provider"
+                      sx={{ width: 28, height: 28 }}
+                    />
+                    <Typography variant="body2">John Doe</Typography>
                   </Stack>
 
                   <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
@@ -288,7 +259,7 @@ export default function ItemsPage() {
                     variant="contained"
                     fullWidth
                     color="primary"
-                    onClick={() => setSelectedItem(item)}
+                    onClick={() => setSelectedItem(item)} // 🔹 Open details modal
                   >
                     View Details
                   </Button>
@@ -299,7 +270,7 @@ export default function ItemsPage() {
         </Grid>
       </Container>
 
-      {/* Add Item Modal */}
+      {/* Modal Popup */}
       {isFormOpen && (
         <ItemForm
           formData={formData}
