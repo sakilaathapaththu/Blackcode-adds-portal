@@ -92,26 +92,39 @@ export const updatePost = async (req, res) => {
   }
 };
 
-// Delete post (owner or provider)
+// Delete post (owner or provider) + image
 export const deletePost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
+    // Only owner or provider can delete
     if (post.owner.toString() !== req.user._id.toString() && req.user.role !== "provider")
       return res.status(403).json({ message: "Forbidden: not owner" });
 
-    // remove image file if exists
+    // Delete image file if exists
     if (post.image) {
-      const f = path.join(process.cwd(), post.image);
-      if (fs.existsSync(f)) {
-        try { fs.unlinkSync(f); } catch (e) {}
+      const filePath = path.join(process.cwd(), "backend", post.image.replace(/^\/+/, "")); 
+      // adjust "backend" to match your real server folder where /uploads lives
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+          console.log("🗑️ Deleted image:", filePath);
+        } catch (err) {
+          console.error("⚠️ Failed to delete image file:", err);
+        }
+      } else {
+        console.warn("⚠️ Image file not found at:", filePath);
       }
     }
 
-    await post.remove();
-    res.json({ message: "Post deleted" });
+    // Delete the post itself
+    await Post.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "✅ Post deleted successfully" });
   } catch (err) {
+    console.error("❌ Delete post error:", err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+
