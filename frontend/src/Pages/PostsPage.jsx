@@ -15,7 +15,8 @@ export default function TestPosts() {
     description: "",
     price: "",
     category: "",
-    location: "",
+    deliveryTime: "",
+    specializations: "",
     contact: "",
     image: null,
   });
@@ -34,7 +35,6 @@ export default function TestPosts() {
     fetchPosts();
   }, []);
 
-  // fetch all posts with owner populated
   const fetchPosts = async () => {
     try {
       setLoading(true);
@@ -75,7 +75,8 @@ export default function TestPosts() {
       description: "",
       price: "",
       category: "",
-      location: "",
+      deliveryTime: "",
+      specializations: "",
       contact: "",
       image: null,
     });
@@ -89,7 +90,14 @@ export default function TestPosts() {
     try {
       const fd = new FormData();
       Object.entries(form).forEach(([key, value]) => {
-        if (value) fd.append(key, value);
+        if (value) {
+          if (key === "specializations") {
+            // convert comma-separated string to JSON array
+            fd.append(key, JSON.stringify(value.split(",").map((s) => s.trim())));
+          } else {
+            fd.append(key, value);
+          }
+        }
       });
 
       if (editing) {
@@ -118,7 +126,8 @@ export default function TestPosts() {
       description: post.description,
       price: post.price || "",
       category: post.category || "",
-      location: post.location || "",
+      deliveryTime: post.deliveryTime || "",
+      specializations: post.specializations?.join(", ") || "",
       contact: post.contact || "",
       image: null,
     });
@@ -187,16 +196,23 @@ export default function TestPosts() {
               placeholder="Price"
               value={form.price}
               onChange={(e) => setForm({ ...form, price: e.target.value })}
+              required
             />
             <input
               placeholder="Category"
               value={form.category}
               onChange={(e) => setForm({ ...form, category: e.target.value })}
+              required
             />
             <input
-              placeholder="Location"
-              value={form.location}
-              onChange={(e) => setForm({ ...form, location: e.target.value })}
+              placeholder="Delivery Time (e.g., 2 Days)"
+              value={form.deliveryTime}
+              onChange={(e) => setForm({ ...form, deliveryTime: e.target.value })}
+            />
+            <input
+              placeholder="Specializations (comma-separated)"
+              value={form.specializations}
+              onChange={(e) => setForm({ ...form, specializations: e.target.value })}
             />
             <input
               placeholder="Contact"
@@ -255,8 +271,14 @@ export default function TestPosts() {
                   </h4>
                   <div style={{ color: "#555" }}>{p.description}</div>
                   <div style={{ marginTop: 6 }}>
-                    <b>Price:</b> {p.price ?? "-"} &nbsp; <b>Location:</b> {p.location ?? "-"}
+                    <b>Price:</b> {p.price ?? "-"} &nbsp; 
+                    <b>Delivery:</b> {p.deliveryTime ?? "-"} &nbsp;
                   </div>
+                  {p.specializations?.length > 0 && (
+                    <div style={{ marginTop: 4 }}>
+                      <b>Specializations:</b> {p.specializations.join(", ")}
+                    </div>
+                  )}
                   <div style={{ marginTop: 6, color: "#333" }}>
                     <small>
                       By: {p.owner?.username} ({p.owner?.name}) • {new Date(p.createdAt).toLocaleString()}

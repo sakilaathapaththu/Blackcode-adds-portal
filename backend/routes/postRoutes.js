@@ -12,11 +12,11 @@ import {
 
 const router = Router();
 
-// public read
+// Public routes (anyone can read)
 router.get("/", getPosts);
 router.get("/:id", getPost);
 
-// protected create / update / delete
+// Protected routes (only logged-in users)
 router.post("/", protect, upload.single("image"), createPost);
 router.put("/:id", protect, upload.single("image"), updatePost);
 router.delete("/:id", protect, deletePost);

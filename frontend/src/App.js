@@ -11,7 +11,7 @@ import Dashboard from "./Pages/Dashboard";
 import Profile from "./Pages/Profile";
 import HomepageNavbar from "./Components/NavBar/Homepagenavbar";
 import AuthPage from "./Pages/Auth/AuthPage";
-import TestPosts from "./Pages/TestPosts";
+import TestPosts from "./Pages/PostsPage";
 
 
 const theme = createTheme({

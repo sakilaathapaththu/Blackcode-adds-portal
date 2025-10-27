@@ -7,16 +7,19 @@ import path from "path";
 // Create post (multipart/form-data; image optional)
 export const createPost = async (req, res) => {
   try {
-    const { title, description, price, category, location, contact } = req.body;
-    if (!title || !description) return res.status(400).json({ message: "title and description required" });
+    const { title, description, price, category, deliveryTime, specializations, contact } = req.body;
+
+    if (!title || !description || !price || !category)
+      return res.status(400).json({ message: "Title, description, price, and category are required" });
 
     const postData = {
       title,
       description,
-      price: price ? Number(price) : undefined,
+      price: Number(price),
       category,
+      deliveryTime: deliveryTime || "",
+      specializations: specializations ? JSON.parse(specializations) : [],
       owner: req.user._id,
-      location,
       contact,
     };
 
@@ -25,9 +28,10 @@ export const createPost = async (req, res) => {
     }
 
     const post = await Post.create(postData);
-    await post.populate("owner", "username name"); // include owner info
+    await post.populate("owner", "username name");
     res.status(201).json({ message: "Post created", post });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -38,8 +42,9 @@ export const getPosts = async (req, res) => {
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .populate("owner", "username name");
-    res.json({ posts });
+    res.json(posts); // return array directly
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -49,8 +54,9 @@ export const getPost = async (req, res) => {
   try {
     const post = await Post.findById(req.params.id).populate("owner", "username name");
     if (!post) return res.status(404).json({ message: "Post not found" });
-    res.json({ post });
+    res.json(post);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -61,24 +67,25 @@ export const updatePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Only owner or provider can update
     if (post.owner.toString() !== req.user._id.toString() && req.user.role !== "provider")
       return res.status(403).json({ message: "Forbidden: not owner" });
 
-    const { title, description, price, category, location, contact } = req.body;
+    const { title, description, price, category, deliveryTime, specializations, contact } = req.body;
+
     if (title) post.title = title;
     if (description) post.description = description;
     if (price !== undefined) post.price = Number(price);
     if (category) post.category = category;
-    if (location) post.location = location;
+    if (deliveryTime) post.deliveryTime = deliveryTime;
+    if (specializations) post.specializations = JSON.parse(specializations);
     if (contact) post.contact = contact;
 
-    // replace image if provided (delete old file)
     if (req.file) {
+      // Delete old image
       if (post.image) {
-        const oldPath = path.join(process.cwd(), post.image);
+        const oldPath = path.join(process.cwd(), "backend", post.image.replace(/^\/+/, ""));
         if (fs.existsSync(oldPath)) {
-          try { fs.unlinkSync(oldPath); } catch (e) {}
+          try { fs.unlinkSync(oldPath); } catch (err) { console.warn("Failed to delete old image", err); }
         }
       }
       post.image = `/uploads/${req.file.filename}`;
@@ -88,6 +95,7 @@ export const updatePost = async (req, res) => {
     await post.populate("owner", "username name");
     res.json({ message: "Post updated", post });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
@@ -98,33 +106,26 @@ export const deletePost = async (req, res) => {
     const post = await Post.findById(req.params.id);
     if (!post) return res.status(404).json({ message: "Post not found" });
 
-    // Only owner or provider can delete
     if (post.owner.toString() !== req.user._id.toString() && req.user.role !== "provider")
       return res.status(403).json({ message: "Forbidden: not owner" });
 
-    // Delete image file if exists
+    // Delete image if exists
     if (post.image) {
-      const filePath = path.join(process.cwd(), "backend", post.image.replace(/^\/+/, "")); 
-      // adjust "backend" to match your real server folder where /uploads lives
+      const filePath = path.join(process.cwd(), "backend", post.image.replace(/^\/+/, ""));
       if (fs.existsSync(filePath)) {
         try {
           fs.unlinkSync(filePath);
-          console.log("🗑️ Deleted image:", filePath);
+          console.log("Deleted image:", filePath);
         } catch (err) {
-          console.error("⚠️ Failed to delete image file:", err);
+          console.warn("Failed to delete image:", err);
         }
-      } else {
-        console.warn("⚠️ Image file not found at:", filePath);
       }
     }
 
-    // Delete the post itself
     await Post.findByIdAndDelete(req.params.id);
-
-    res.json({ message: "✅ Post deleted successfully" });
+    res.json({ message: "Post deleted successfully" });
   } catch (err) {
-    console.error("❌ Delete post error:", err);
+    console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
