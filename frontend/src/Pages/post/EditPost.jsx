@@ -113,9 +113,9 @@ export default function EditPost() {
     : [];
 
   return (
-    <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 4 }}>
-      <Container maxWidth="xl">
-        <Box sx={{ mb: 4, textAlign: "center" }}>
+    <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
+      <Container maxWidth="lg">
+        <Box sx={{ mb: 4, textAlign: "left" }}>
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
             Edit Post
           </Typography>
