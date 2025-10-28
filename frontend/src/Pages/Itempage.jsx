@@ -155,7 +155,7 @@ export default function ItemsPage() {
   return (
     <Box sx={{ flexGrow: 1 }}>
       {/* Header */}
-      <AppBar position="static" color="primary">
+      {/* <AppBar position="static" color="primary">
         <Toolbar>
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Assignment Helpers Marketplace
@@ -174,7 +174,7 @@ export default function ItemsPage() {
             📢 Post Your AD
           </button>
         </Toolbar>
-      </AppBar>
+      </AppBar> */}
 
       {/* Posts List */}
       <Container sx={{ mt: 4, mb: 4 }}>

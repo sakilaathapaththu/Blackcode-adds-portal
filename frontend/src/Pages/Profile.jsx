@@ -1,4 +1,3 @@
-// src/Pages/Profile.jsx
 import React, { useContext, useEffect, useState } from "react";
 import axios from "axios";
 import {
@@ -14,6 +13,8 @@ import {
   Chip,
   Divider,
   Avatar,
+  AppBar,
+  Toolbar,
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
 import { AuthContext } from "../Context/AuthContext";
@@ -50,9 +51,20 @@ export default function Profile() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false); // ✅ for creating new post
   const [editFormData, setEditFormData] = useState(null);
   const [image, setImage] = useState(null);
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    category: "",
+    price: "",
+    deliveryTime: "",
+    specializations: "",
+    contact: "",
+  });
 
   // ✅ Fetch current user's posts
   const fetchUserPosts = async () => {
@@ -131,9 +143,48 @@ export default function Profile() {
     }
   };
 
+  // ✅ Create new post
+  const handleCreate = async (e) => {
+    e.preventDefault();
+    try {
+      const data = new FormData();
+      Object.keys(formData).forEach((key) => data.append(key, formData[key]));
+      if (image) data.append("image", image);
+      if (formData.specializations.trim() !== "") {
+        const arr = formData.specializations.split(",").map((s) => s.trim());
+        data.set("specializations", JSON.stringify(arr));
+      }
+
+      await axios.post(API_URL, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      setIsFormOpen(false);
+      setImage(null);
+      setFormData({
+        title: "",
+        description: "",
+        category: "",
+        price: "",
+        deliveryTime: "",
+        specializations: "",
+        contact: "",
+      });
+      fetchUserPosts();
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create post");
+    }
+  };
+
   const handleChange = (e) =>
     setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setImage(e.target.files[0]);
+  const handleCreateChange = (e) =>
+    setFormData({ ...formData, [e.target.name]: e.target.value });
 
   // ✅ Loading and error UI
   if (loading)
@@ -151,119 +202,141 @@ export default function Profile() {
     );
 
   return (
-
-
-    
     <Container sx={{ mt: 4 }}>
-
-      <div style={{ padding: 16 }}>
+     <div style={{ padding: 16 }}>
       <h2>Profile</h2>
       <pre>{JSON.stringify(user, null, 2)}</pre>
     </div>
-      <Typography variant="h5" gutterBottom>
-        {user?.name || "User"}'s Posts
-      </Typography>
 
-      {posts.length === 0 ? (
-        <Typography color="text.secondary">You haven't created any posts yet.</Typography>
-      ) : (
-        posts.map((post) => (
-          <Card
-            key={post._id}
-            sx={{
-              display: "flex",
-              flexDirection: { xs: "column", md: "row" },
-              mb: 3,
-              borderRadius: 3,
-              overflow: "hidden",
-              boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+      {/* ✅ AppBar with Post button */}
+      <AppBar position="static" color="primary">
+        <Toolbar sx={{ display: "flex", justifyContent: "space-between" }}>
+          <Typography variant="h6">{user?.name || "User"}'s Profile</Typography>
+          <button
+            onClick={() => setIsFormOpen(true)}
+            style={{
+              background: "#fff",
+              color: "#1976d2",
+              padding: "8px 14px",
+              border: "none",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              cursor: "pointer",
             }}
           >
-            <Box sx={{ flex: "0 0 280px" }}>
-              <CardMedia
-                component="img"
-                image={
-                  post.image
-                    ? `http://localhost:5000${post.image}`
-                    : "https://via.placeholder.com/280x200.png?text=No+Image"
-                }
-                alt={post.title}
-                sx={{ height: "100%", objectFit: "cover" }}
-              />
-            </Box>
+            📢 Post Your AD
+          </button>
+        </Toolbar>
+      </AppBar>
 
-            <CardContent sx={{ flex: 1 }}>
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                alignItems="center"
-              >
-                <Chip label={post.category} color="primary" size="small" />
-                <Typography variant="body2" color="text.secondary">
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </Typography>
-              </Stack>
+      <Box sx={{ p: 2 }}>
+        <Typography variant="h5" gutterBottom>
+          Your Posts
+        </Typography>
 
-              <Typography variant="h6" sx={{ mt: 1 }}>
-                {post.title}
-              </Typography>
+        {posts.length === 0 ? (
+          <Typography color="text.secondary">
+            You haven't created any posts yet.
+          </Typography>
+        ) : (
+          posts.map((post) => (
+            <Card
+              key={post._id}
+              sx={{
+                display: "flex",
+                flexDirection: { xs: "column", md: "row" },
+                mb: 3,
+                borderRadius: 3,
+                overflow: "hidden",
+                boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+              }}
+            >
+              <Box sx={{ flex: "0 0 280px" }}>
+                <CardMedia
+                  component="img"
+                  image={
+                    post.image
+                      ? `http://localhost:5000${post.image}`
+                      : "https://via.placeholder.com/280x200.png?text=No+Image"
+                  }
+                  alt={post.title}
+                  sx={{ height: "100%", objectFit: "cover" }}
+                />
+              </Box>
 
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                sx={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  display: "-webkit-box",
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: "vertical",
-                }}
-              >
-                {post.description}
-              </Typography>
-
-              <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-                <Avatar {...stringAvatar(user?.name || "U")} />
-                <Typography variant="body2">{user?.name}</Typography>
-              </Stack>
-
-              <Stack direction="row" spacing={3} sx={{ mt: 1 }}>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <Timer fontSize="small" />
-                  <Typography variant="body2">{post.deliveryTime}</Typography>
-                </Stack>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <AttachMoney fontSize="small" />
-                  <Typography variant="body2">
-                    {post.price.toLocaleString()} LKR
+              <CardContent sx={{ flex: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Chip label={post.category} color="primary" size="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    {new Date(post.createdAt).toLocaleDateString()}
                   </Typography>
                 </Stack>
-              </Stack>
 
-              <Divider sx={{ my: 1.5 }} />
+                <Typography variant="h6" sx={{ mt: 1 }}>
+                  {post.title}
+                </Typography>
 
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={() => handleEdit(post)}
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                  }}
                 >
-                  Edit
-                </Button>
-                <Button
-                  variant="outlined"
-                  color="error"
-                  onClick={() => handleDelete(post._id)}
-                >
-                  Delete
-                </Button>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))
-      )}
+                  {post.description}
+                </Typography>
 
-      {/* Edit Modal */}
+                <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
+                  <Avatar {...stringAvatar(user?.name || "U")} />
+                  <Typography variant="body2">{user?.name}</Typography>
+                </Stack>
+
+                <Stack direction="row" spacing={3} sx={{ mt: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Timer fontSize="small" />
+                    <Typography variant="body2">{post.deliveryTime}</Typography>
+                  </Stack>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <AttachMoney fontSize="small" />
+                    <Typography variant="body2">
+                      {post.price.toLocaleString()} LKR
+                    </Typography>
+                  </Stack>
+                </Stack>
+
+                <Divider sx={{ my: 1.5 }} />
+
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => handleEdit(post)}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    color="error"
+                    onClick={() => handleDelete(post._id)}
+                  >
+                    Delete
+                  </Button>
+                </Stack>
+              </CardContent>
+            </Card>
+          ))
+        )}
+      </Box>
+
+      {/* ✅ Edit Post Modal */}
       {isEditOpen && (
         <ItemForm
           formData={editFormData}
@@ -271,6 +344,17 @@ export default function Profile() {
           handleFileChange={handleFileChange}
           handleSubmit={handleUpdate}
           onClose={() => setIsEditOpen(false)}
+        />
+      )}
+
+      {/* ✅ Create Post Modal */}
+      {isFormOpen && (
+        <ItemForm
+          formData={formData}
+          handleChange={handleCreateChange}
+          handleFileChange={handleFileChange}
+          handleSubmit={handleCreate}
+          onClose={() => setIsFormOpen(false)}
         />
       )}
     </Container>
