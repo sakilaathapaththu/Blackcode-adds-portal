@@ -186,7 +186,7 @@ export default function ItemsPage() {
               flexDirection: { xs: "column", md: "row" },
               alignItems: "stretch",
               mb: 3,
-              borderRadius: 3,
+              borderRadius: 1,
               overflow: "hidden",
               height: 250,
               boxShadow: "0 4px 15px rgba(0,0,0,0.1)",

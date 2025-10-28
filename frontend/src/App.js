@@ -12,6 +12,8 @@ import Profile from "./Pages/Profile";
 import HomepageNavbar from "./Components/NavBar/Homepagenavbar";
 import AuthPage from "./Pages/Auth/AuthPage";
 import TestPosts from "./Pages/PostsPage";
+import NewPost from "./Pages/post/NewPost";
+import EditPost from "./Pages/post/EditPost";
 
 
 const theme = createTheme({
@@ -32,6 +34,8 @@ export default function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/test" element={<TestPosts />} />
+              <Route path="/posts/new" element={<NewPost />} />
+              <Route path="/posts/edit/:id" element={<EditPost />} />
               <Route
                 path="/dashboard"
                 element={
