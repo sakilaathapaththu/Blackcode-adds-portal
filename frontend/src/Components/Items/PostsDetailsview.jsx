@@ -9,7 +9,7 @@ import {
   Rating,
   Divider,
 } from "@mui/material";
-import { Timer, AttachMoney } from "@mui/icons-material";
+import { Timer, AccountBalanceWallet } from "@mui/icons-material";
 
 // --- Helper functions for letter avatar ---
 function stringToColor(str) {
@@ -36,6 +36,13 @@ function stringAvatar(name) {
   };
 }
 
+// --- Format delivery time: "1 day" or "5 days" ---
+function formatDeliveryTime(time) {
+  const number = parseInt(time);
+  if (isNaN(number)) return time; // fallback
+  return `${number} ${number === 1 ? "day" : "days"}`;
+}
+
 export default function ItemDetails({ item, onClose }) {
   if (!item) return null;
 
@@ -52,6 +59,11 @@ export default function ItemDetails({ item, onClose }) {
         justifyContent: "center",
         alignItems: "center",
         zIndex: 1200,
+        animation: "fadeIn 0.3s ease-in-out",
+        "@keyframes fadeIn": {
+          from: { opacity: 0 },
+          to: { opacity: 1 },
+        },
       }}
     >
       <Box
@@ -64,6 +76,12 @@ export default function ItemDetails({ item, onClose }) {
           overflowY: "auto",
           p: 3,
           boxShadow: 6,
+          transform: "scale(0.9)",
+          animation: "scaleUp 0.3s forwards",
+          "@keyframes scaleUp": {
+            from: { transform: "scale(0.9)", opacity: 0 },
+            to: { transform: "scale(1)", opacity: 1 },
+          },
         }}
       >
         {/* Category */}
@@ -82,19 +100,17 @@ export default function ItemDetails({ item, onClose }) {
         {/* Provider */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <Avatar {...stringAvatar(item.owner?.name || "John Doe")} />
-          <Typography variant="body2">
-            {item.owner?.name || "John Doe"}
-          </Typography>
+          <Typography variant="body2">{item.owner?.name || "John Doe"}</Typography>
         </Stack>
 
         {/* Delivery & Price */}
         <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Timer fontSize="small" />
-            <Typography>{item.deliveryTime}</Typography>
+            <Typography>{formatDeliveryTime(item.deliveryTime)}</Typography>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={0.5}>
-            <AttachMoney fontSize="small" />
+            <AccountBalanceWallet fontSize="small" />
             <Typography>{item.price.toLocaleString()} LKR</Typography>
           </Stack>
         </Stack>
@@ -126,12 +142,29 @@ export default function ItemDetails({ item, onClose }) {
         </Typography>
 
         {/* Actions */}
-        <Button variant="contained" color="success" fullWidth sx={{ mb: 1 }}>
-          📅 Book Now
-        </Button>
-        <Button variant="outlined" fullWidth color="error" onClick={onClose}>
-          Close
-        </Button>
+        <Stack spacing={1}>
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            sx={{
+              bgcolor: "#1a237e",
+              "&:hover": { bgcolor: "#0d47a1" },
+              transition: "all 0.3s ease",
+            }}
+          >
+            📅 Book Now
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            color="error"
+            onClick={onClose}
+            sx={{ transition: "all 0.3s ease" }}
+          >
+            Close
+          </Button>
+        </Stack>
       </Box>
     </Box>
   );

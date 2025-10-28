@@ -11,36 +11,18 @@ import {
   Stack,
   Button,
   Chip,
-  Avatar,
 } from "@mui/material";
-import { ExpandMore, Timer, AttachMoney } from "@mui/icons-material";
+import { ExpandMore, Timer, AccountBalanceWallet } from "@mui/icons-material";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:5000/api/posts";
 
-function stringToColor(str) {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  let color = "#";
-  for (let i = 0; i < 3; i++) {
-    const value = (hash >> (i * 8)) & 0xff;
-    color += ("00" + value.toString(16)).slice(-2);
-  }
-  return color;
-}
-
-function stringAvatar(name) {
-  return {
-    sx: {
-      bgcolor: stringToColor(name),
-      width: 28,
-      height: 28,
-    },
-    children: name[0].toUpperCase(),
-  };
+// Helper function to format delivery time
+function formatDeliveryTime(time) {
+  const number = parseInt(time);
+  if (isNaN(number)) return time; // fallback for invalid values
+  return `${number} ${number === 1 ? "day" : "days"}`;
 }
 
 export default function Profile() {
@@ -109,25 +91,36 @@ export default function Profile() {
         <pre>{JSON.stringify(user, null, 2)}</pre>
       </div>
 
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography variant="h4">{user?.name}'s Profile</Typography>
-        <Button variant="contained" color="secondary" onClick={handleAddPost}>
+        <Button
+          variant="contained"
+          sx={{
+            bgcolor: "#1a237e",
+            color: "#fff",
+            textTransform: "none",
+            fontWeight: 600,
+            "&:hover": { bgcolor: "#0d47a1", transform: "scale(1.03)" },
+            transition: "all 0.2s",
+          }}
+          onClick={handleAddPost}
+        >
           📢 Post Your AD
         </Button>
       </Box>
 
-      <Typography variant="h5" gutterBottom>
-        Your Posts
-      </Typography>
-
       {posts.length === 0 ? (
-        <Typography color="text.secondary">
-          You haven't created any posts yet.
-        </Typography>
+        <Typography color="text.secondary">You haven't created any posts yet.</Typography>
       ) : (
         posts.map((post) => (
-          <Accordion key={post._id} sx={{ mb: 2 }}>
-            {/* Minimized header */}
+          <Accordion
+            key={post._id}
+            sx={{
+              mb: 2,
+              transition: "transform 0.2s, box-shadow 0.2s",
+              "&:hover": { transform: "translateY(-2px)", boxShadow: 3 },
+            }}
+          >
             <AccordionSummary expandIcon={<ExpandMore />}>
               <Stack direction="row" spacing={2} alignItems="center" sx={{ width: "100%" }}>
                 <Chip label={post.category} color="primary" size="small" />
@@ -138,22 +131,20 @@ export default function Profile() {
                   {new Date(post.createdAt).toLocaleDateString()}
                 </Typography>
                 <Stack direction="row" alignItems="center" spacing={0.5} sx={{ ml: 2 }}>
-                  <AttachMoney fontSize="small" />
+                  <AccountBalanceWallet fontSize="small" />
                   <Typography variant="body2">{post.price.toLocaleString()} LKR</Typography>
                 </Stack>
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <Timer fontSize="small" />
-                  <Typography variant="body2">{post.deliveryTime}</Typography>
+                  <Typography variant="body2">{formatDeliveryTime(post.deliveryTime)}</Typography>
                 </Stack>
               </Stack>
             </AccordionSummary>
 
-            {/* Expanded details */}
             <AccordionDetails>
-              <Stack spacing={2} sx={{ position: "relative" }}>
+              <Stack spacing={2}>
                 {post.image && (
                   <Box sx={{ position: "relative", width: "100%", height: 300, borderRadius: 1, overflow: "hidden" }}>
-                    {/* Blurred background */}
                     <Box
                       sx={{
                         position: "absolute",
@@ -165,10 +156,9 @@ export default function Profile() {
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         filter: "blur(12px)",
-                        opacity: 0.4, // subtle blur
+                        opacity: 0.4,
                       }}
                     />
-                    {/* Main image */}
                     <Box
                       component="img"
                       src={`http://localhost:5000${post.image}`}
@@ -189,10 +179,33 @@ export default function Profile() {
                 <Typography variant="body2">{post.description}</Typography>
 
                 <Stack direction="row" spacing={2}>
-                  <Button variant="outlined" color="primary" onClick={() => handleEdit(post)}>
+                  <Button
+                    variant="contained"
+                    sx={{
+                      bgcolor: "#1a237e",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      "&:hover": { bgcolor: "#0d47a1", transform: "scale(1.05)" },
+                      transition: "all 0.2s",
+                    }}
+                    onClick={() => handleEdit(post)}
+                  >
                     Edit
                   </Button>
-                  <Button variant="outlined" color="error" onClick={() => handleDelete(post._id)}>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    sx={{
+                      bgcolor: "#f44336",
+                      color: "#fff",
+                      textTransform: "none",
+                      fontWeight: 600,
+                      "&:hover": { bgcolor: "#d32f2f", transform: "scale(1.05)" },
+                      transition: "all 0.2s",
+                    }}
+                    onClick={() => handleDelete(post._id)}
+                  >
                     Delete
                   </Button>
                 </Stack>
