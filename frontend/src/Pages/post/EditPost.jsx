@@ -158,7 +158,7 @@ export default function EditPost() {
 
         <Grid container spacing={4} alignItems="stretch">
           {/* Left Column - Form */}
-          <Grid item xs={12} md={6} sx={{ maxWidth: 500, width: "100%" }}>
+          <Grid item xs={12} md={6} sx={{ maxWidth: 550, width: "100%" }}>
             <Paper elevation={2} sx={{ p: 4, borderRadius: 2, bgcolor: "white" }}>
               <Typography
                 variant="h5"
@@ -292,7 +292,7 @@ export default function EditPost() {
           </Grid>
 
           {/* Right Column - Live Preview */}
-          <Grid item xs={12} md={6} sx={{ maxWidth: 500, width: "100%" }}>
+          <Grid item xs={12} md={6} sx={{ maxWidth: 560, width: "100%" }}>
             <Paper
               elevation={2}
               sx={{
