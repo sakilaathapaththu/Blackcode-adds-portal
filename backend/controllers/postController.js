@@ -129,3 +129,15 @@ export const deletePost = async (req, res) => {
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
+// Get posts of the logged-in user
+export const getUserPosts = async (req, res) => {
+  try {
+    const posts = await Post.find({ owner: req.user._id })
+      .sort({ createdAt: -1 })
+      .populate("owner", "username name");
+    res.json(posts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error", error: err.message });
+  }
+};

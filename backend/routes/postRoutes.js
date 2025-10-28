@@ -9,6 +9,7 @@ import {
   updatePost,
   deletePost,
 } from "../controllers/postController.js";
+import { getUserPosts } from "../controllers/postController.js";
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.get("/:id", getPost);
 router.post("/", protect, upload.single("image"), createPost);
 router.put("/:id", protect, upload.single("image"), updatePost);
 router.delete("/:id", protect, deletePost);
+router.get("/user/me", protect, getUserPosts);
 
 export default router;
