@@ -62,7 +62,12 @@ export default function NewPost() {
     if (touched.title) temp.title = data.title.trim() ? "" : "Title is required.";
     if (touched.category)
       temp.category = data.category.trim() ? "" : "Category is required.";
-    if (touched.price) temp.price = data.price ? "" : "Price is required.";
+    if (touched.price) {
+      if (!data.price.trim()) temp.price = "Price is required.";
+      else if (isNaN(Number(data.price)) || Number(data.price) <= 0)
+        temp.price = "Enter a valid price.";
+      else temp.price = "";
+    }
     if (touched.deliveryTime)
       temp.deliveryTime = data.deliveryTime.trim()
         ? ""
@@ -98,9 +103,9 @@ export default function NewPost() {
       return;
     }
 
-    if (name === "contact") {
-      if (!/^\d*$/.test(value)) return;
-      if (value.length > 10) return;
+    if (name === "contact" || name === "price") {
+      if (!/^\d*$/.test(value)) return; // only numbers
+      if (name === "contact" && value.length > 10) return; // max 10 digits for phone
     }
 
     setFormData({ ...formData, [name]: value });
@@ -118,14 +123,15 @@ export default function NewPost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const allTouched = Object.keys(formData).reduce(
       (acc, key) => ({ ...acc, [key]: true }),
       {}
     );
     setTouched(allTouched);
+
     const validation = validate(formData);
     setErrors(validation);
-
     if (Object.values(validation).some((x) => x !== "")) return;
 
     try {
@@ -146,8 +152,7 @@ export default function NewPost() {
       });
       navigate("/profile");
     } catch (err) {
-      console.error(err);
-      alert("Failed to create post");
+   
     } finally {
       setLoading(false);
     }
@@ -172,9 +177,7 @@ export default function NewPost() {
       : 1;
 
   const isFormInvalid =
-    isLimitReached ||
-    loading ||
-    Object.values(errors).some((v) => v !== "");
+    isLimitReached || loading || Object.values(errors).some((v) => v !== "");
 
   return (
     <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
@@ -207,7 +210,7 @@ export default function NewPost() {
                 justifyContent: "space-between",
               }}
             >
-              <Box component="form" onSubmit={handleSubmit}>
+              <Box component="form" onSubmit={handleSubmit} noValidate>
                 <Stack spacing={3}>
                   <Typography
                     variant="h5"
@@ -217,10 +220,10 @@ export default function NewPost() {
                     Post Details
                   </Typography>
 
-                  {[
+                  {[ 
                     { label: "Title", name: "title" },
                     { label: "Category", name: "category" },
-                    { label: "Price (LKR)", name: "price", type: "number" },
+                    { label: "Price (LKR)", name: "price" },
                     { label: "Delivery Time", name: "deliveryTime" },
                     { label: "Contact", name: "contact" },
                   ].map((field) => (
@@ -231,12 +234,12 @@ export default function NewPost() {
                       onChange={handleChange}
                       onBlur={handleBlur}
                       fullWidth
-                      required
                       error={touched[field.name] && !!errors[field.name]}
                       helperText={touched[field.name] ? errors[field.name] : ""}
                       InputProps={{
                         style: {
                           opacity: touched[field.name] && errors[field.name] ? 0.5 : 1,
+                          inputMode: field.name === "price" || field.name === "contact" ? "numeric" : "text",
                         },
                       }}
                     />
@@ -253,12 +256,10 @@ export default function NewPost() {
                       fullWidth
                       multiline
                       minRows={3}
-                      required
                       error={touched.description && !!errors.description}
                       helperText={
                         touched.description
-                          ? errors.description ||
-                            `${wordCount}/${maxWords} words`
+                          ? errors.description || `${wordCount}/${maxWords} words`
                           : `${wordCount}/${maxWords} words`
                       }
                       FormHelperTextProps={{
@@ -271,9 +272,7 @@ export default function NewPost() {
                           fontWeight: 500,
                         },
                       }}
-                      InputProps={{
-                        style: { opacity: isLimitReached ? 0.5 : 1 },
-                      }}
+                      InputProps={{ style: { opacity: isLimitReached ? 0.5 : 1 } }}
                     />
                     <LinearProgress
                       variant="determinate"
