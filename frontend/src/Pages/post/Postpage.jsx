@@ -46,6 +46,14 @@ function formatDeliveryTime(time) {
   return `${number} ${number === 1 ? "day" : "days"}`;
 }
 
+// --- Truncate description to N words ---
+function truncateWords(text, wordLimit) {
+  if (!text) return "";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= wordLimit) return text;
+  return words.slice(0, wordLimit).join(" ") + "...";
+}
+
 export default function ItemsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -178,7 +186,17 @@ export default function ItemsPage() {
                 color="text.secondary"
                 sx={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
               >
-                {item.description}
+                {truncateWords(item.description, 20)}{" "}
+                {item.description.split(/\s+/).length > 20 && (
+                  <Button
+                    variant="text"
+                    size="small"
+                    sx={{ textTransform: "none", p: 0, ml: 0.5 }}
+                    onClick={() => setSelectedItem(item)}
+                  >
+                    See more
+                  </Button>
+                )}
               </Typography>
 
               <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
