@@ -17,8 +17,8 @@ import {
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
 import axios from "axios";
-import ItemForm from "../Components/Items/ItemForm";
-import ItemDetails from "../Components/Items/ItemDetailsview";
+import ItemForm from "../Components/Items/PostsForm";
+import ItemDetails from "../Components/Items/PostsDetailsview";
 
 // ✅ Use the backend /api/posts route
 const API_URL = "http://localhost:5000/api/posts";

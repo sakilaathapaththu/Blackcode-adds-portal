@@ -18,7 +18,7 @@ import {
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
 import { AuthContext } from "../Context/AuthContext";
-import ItemForm from "../Components/Items/ItemForm";
+import ItemForm from "../Components/Items/PostsForm";
 
 const API_URL = "http://localhost:5000/api/posts";
 
