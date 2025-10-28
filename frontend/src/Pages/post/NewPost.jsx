@@ -15,6 +15,7 @@ import {
   CardMedia,
   Chip,
   Paper,
+  LinearProgress,
 } from "@mui/material";
 import {
   AccessTime,
@@ -30,6 +31,7 @@ const API_URL = "http://localhost:5000/api/posts";
 export default function NewPost() {
   const { token } = useContext(AuthContext);
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -39,12 +41,35 @@ export default function NewPost() {
     specializations: "",
     contact: "",
   });
+
+  const [errors, setErrors] = useState({});
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const maxWords = 150;
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const isLimitReached = wordCount >= maxWords;
+
+  // Accurate word count function
+  const countWords = (text) => {
+    if (!text) return 0;
+    return text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "description") {
+      const words = countWords(value);
+      setWordCount(words);
+      if (words <= maxWords) {
+        setFormData({ ...formData, [name]: value });
+      }
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -56,8 +81,25 @@ export default function NewPost() {
     }
   };
 
+  const validate = () => {
+    let temp = {};
+    temp.title = formData.title ? "" : "Title is required.";
+    temp.description =
+      countWords(formData.description) <= maxWords
+        ? ""
+        : `Description cannot exceed ${maxWords} words.`;
+    temp.category = formData.category ? "" : "Category is required.";
+    temp.price = formData.price ? "" : "Price is required.";
+    temp.deliveryTime = formData.deliveryTime ? "" : "Delivery time is required.";
+    temp.contact = formData.contact ? "" : "Contact is required.";
+    setErrors(temp);
+    return Object.values(temp).every((x) => x === "");
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+
     try {
       setLoading(true);
       const data = new FormData();
@@ -87,16 +129,26 @@ export default function NewPost() {
     ? formData.specializations.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
+  // Truncate text for live preview
+  const limitWords = (text, max) => {
+    if (!text) return "";
+    const words = text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+    if (words.length <= max) return text;
+    return words.slice(0, max).join(" ") + "...";
+  };
+
+  const descOpacity =
+    wordCount >= 120 && wordCount <= maxWords
+      ? 0.5 + (maxWords - wordCount) / maxWords
+      : wordCount > maxWords
+      ? 0.4
+      : 1;
+
   return (
     <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
       <Container maxWidth="lg">
-        {/* Header */}
         <Box sx={{ mb: 4, textAlign: "left" }}>
-          <Typography
-            variant="h3"
-            gutterBottom
-            sx={{ fontWeight: 700, color: "#1a237e" }}
-          >
+          <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
             Create New Post
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
@@ -104,34 +156,27 @@ export default function NewPost() {
           </Typography>
         </Box>
 
-        <Grid
-          container
-          spacing={4}
-          justifyContent="center"
-          alignItems="flex-start"
-        >
+        <Grid container spacing={4} alignItems="stretch">
           {/* Left Column - Form */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} sx={{ maxWidth: 500, width: "100%" }}>
             <Paper
               elevation={2}
               sx={{
                 p: 4,
                 borderRadius: 2,
                 bgcolor: "white",
-                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
               }}
             >
-              <Typography
-                variant="h5"
-                gutterBottom
-                sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}
-              >
-                Post Details
-              </Typography>
-
               <Box component="form" onSubmit={handleSubmit}>
                 <Stack spacing={3}>
-                  {/* Form Fields */}
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
+                    Post Details
+                  </Typography>
+
                   <TextField
                     label="Title"
                     name="title"
@@ -139,31 +184,45 @@ export default function NewPost() {
                     onChange={handleChange}
                     fullWidth
                     required
-                    variant="outlined"
-                    placeholder="Enter an attractive title"
-                    sx={{
-                      "& .MuiOutlinedInput-root:hover fieldset": {
-                        borderColor: "#1a237e",
-                      },
-                    }}
+                    error={!!errors.title}
+                    helperText={errors.title}
                   />
 
-                  <TextField
-                    label="Description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    fullWidth
-                    multiline
-                    rows={6}
-                    required
-                    placeholder="Describe your service in detail..."
-                    sx={{
-                      "& .MuiOutlinedInput-root:hover fieldset": {
-                        borderColor: "#1a237e",
-                      },
-                    }}
-                  />
+                  {/* Description Field */}
+                  <Box>
+                    <TextField
+                      label="Description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      fullWidth
+                      multiline
+                      minRows={3}
+                      required
+                      InputProps={{ style: { opacity: isLimitReached ? 0.5 : 1 } }}
+                      helperText={`${wordCount}/${maxWords} words`}
+                      FormHelperTextProps={{
+                        sx: {
+                          textAlign: "right",
+                          color: isLimitReached ? "error.main" : "text.secondary",
+                          fontWeight: 500,
+                        },
+                      }}
+                    />
+                    <LinearProgress
+                      variant="determinate"
+                      value={(wordCount / maxWords) * 100}
+                      sx={{
+                        height: 6,
+                        borderRadius: 3,
+                        mt: 1,
+                        bgcolor: "#e0e0e0",
+                        "& .MuiLinearProgress-bar": {
+                          bgcolor: wordCount > 140 ? "#ef5350" : "#1a237e",
+                        },
+                      }}
+                    />
+                  </Box>
 
                   <TextField
                     label="Category"
@@ -172,50 +231,30 @@ export default function NewPost() {
                     onChange={handleChange}
                     fullWidth
                     required
-                    placeholder="e.g., Web Development, Graphic Design"
-                    sx={{
-                      "& .MuiOutlinedInput-root:hover fieldset": {
-                        borderColor: "#1a237e",
-                      },
-                    }}
+                    error={!!errors.category}
+                    helperText={errors.category}
                   />
-
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Price (LKR)"
-                        name="price"
-                        type="number"
-                        value={formData.price}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                        placeholder="5000"
-                        sx={{
-                          "& .MuiOutlinedInput-root:hover fieldset": {
-                            borderColor: "#1a237e",
-                          },
-                        }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        label="Delivery Time"
-                        name="deliveryTime"
-                        value={formData.deliveryTime}
-                        onChange={handleChange}
-                        fullWidth
-                        required
-                        placeholder="e.g., 3-5 days"
-                        sx={{
-                          "& .MuiOutlinedInput-root:hover fieldset": {
-                            borderColor: "#1a237e",
-                          },
-                        }}
-                      />
-                    </Grid>
-                  </Grid>
-
+                  <TextField
+                    label="Price (LKR)"
+                    name="price"
+                    type="number"
+                    value={formData.price}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                    error={!!errors.price}
+                    helperText={errors.price}
+                  />
+                  <TextField
+                    label="Delivery Time"
+                    name="deliveryTime"
+                    value={formData.deliveryTime}
+                    onChange={handleChange}
+                    fullWidth
+                    required
+                    error={!!errors.deliveryTime}
+                    helperText={errors.deliveryTime}
+                  />
                   <TextField
                     label="Specializations (comma separated)"
                     name="specializations"
@@ -224,13 +263,7 @@ export default function NewPost() {
                     fullWidth
                     placeholder="React, Node.js, MongoDB"
                     helperText="Separate each specialization with a comma"
-                    sx={{
-                      "& .MuiOutlinedInput-root:hover fieldset": {
-                        borderColor: "#1a237e",
-                      },
-                    }}
                   />
-
                   <TextField
                     label="Contact"
                     name="contact"
@@ -238,81 +271,36 @@ export default function NewPost() {
                     onChange={handleChange}
                     fullWidth
                     required
-                    placeholder="Email or phone number"
-                    sx={{
-                      "& .MuiOutlinedInput-root:hover fieldset": {
-                        borderColor: "#1a237e",
-                      },
-                    }}
+                    error={!!errors.contact}
+                    helperText={errors.contact}
                   />
 
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      fullWidth
-                      startIcon={<ImageIcon />}
-                      sx={{
-                        py: 2,
-                        borderStyle: "dashed",
-                        borderWidth: 2,
-                        "&:hover": {
-                          borderWidth: 2,
-                          borderStyle: "dashed",
-                          bgcolor: "#f5f7fa",
-                        },
-                      }}
-                    >
-                      {image ? "Change Image" : "Upload Image"}
-                      <input
-                        type="file"
-                        hidden
-                        accept="image/*"
-                        onChange={handleFileChange}
-                      />
-                    </Button>
-                    {image && (
-                      <Typography
-                        variant="caption"
-                        color="success.main"
-                        sx={{ mt: 1, display: "block" }}
-                      >
-                        ✓ {image.name}
-                      </Typography>
-                    )}
-                  </Box>
+                  <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
+                    {image ? "Change Image" : "Upload Image"}
+                    <input type="file" hidden accept="image/*" onChange={handleFileChange} />
+                  </Button>
+                  {image && (
+                    <Typography variant="caption" color="success.main" sx={{ mt: 1, display: "block" }}>
+                      ✓ {image.name}
+                    </Typography>
+                  )}
 
                   <Divider />
-
                   <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    <Button
-                      variant="outlined"
-                      onClick={() => navigate("/profile")}
-                      sx={{
-                        px: 4,
-                        color: "#666",
-                        borderColor: "#ddd",
-                        "&:hover": {
-                          borderColor: "#999",
-                          bgcolor: "#f5f5f5",
-                        },
-                      }}
-                    >
+                    <Button variant="outlined" onClick={() => navigate("/profile")}>
                       Cancel
                     </Button>
                     <Button
                       variant="contained"
                       type="submit"
-                      disabled={loading}
+                      disabled={loading || isLimitReached}
                       sx={{
-                        px: 4,
-                        bgcolor: "#1a237e",
-                        "&:hover": {
-                          bgcolor: "#0d47a1",
-                        },
+                        bgcolor: isLimitReached ? "grey.400" : "#1a237e",
+                        opacity: isLimitReached ? 0.6 : 1,
+                        "&:hover": { bgcolor: isLimitReached ? "grey.500" : "#0d47a1" },
                       }}
                     >
-                      {loading ? "Publishing..." : "Publish Post"}
+                      {loading ? "Creating..." : "Create Post"}
                     </Button>
                   </Stack>
                 </Stack>
@@ -321,23 +309,18 @@ export default function NewPost() {
           </Grid>
 
           {/* Right Column - Live Preview */}
-          <Grid item xs={12} md={6}>
+          <Grid item xs={12} md={6} sx={{ maxWidth: 500, width: "100%" }}>
             <Paper
               elevation={2}
               sx={{
                 p: 3,
                 borderRadius: 2,
                 bgcolor: "white",
-                width: "100%",
                 position: { md: "sticky", xs: "relative" },
                 top: { md: 20, xs: 0 },
               }}
             >
-              <Typography
-                variant="h5"
-                gutterBottom
-                sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}
-              >
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
                 Live Preview
               </Typography>
 
@@ -351,13 +334,7 @@ export default function NewPost() {
                 }}
               >
                 {imagePreview ? (
-                  <CardMedia
-                    component="img"
-                    height="280"
-                    image={imagePreview}
-                    alt="Preview"
-                    sx={{ objectFit: "cover" }}
-                  />
+                  <CardMedia component="img" height="280" image={imagePreview} alt="Preview" sx={{ objectFit: "cover" }} />
                 ) : (
                   <Box
                     sx={{
@@ -380,11 +357,7 @@ export default function NewPost() {
                   <Typography
                     variant="h5"
                     gutterBottom
-                    sx={{
-                      fontWeight: 700,
-                      color: formData.title ? "#1a237e" : "#bbb",
-                      mb: 2,
-                    }}
+                    sx={{ fontWeight: 700, color: formData.title ? "#1a237e" : "#bbb", mb: 2 }}
                   >
                     {formData.title || "Your Post Title"}
                   </Typography>
@@ -392,49 +365,25 @@ export default function NewPost() {
                   <Stack spacing={2} sx={{ mb: 3 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Category sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography
-                        variant="body2"
-                        color={
-                          formData.category ? "text.primary" : "text.secondary"
-                        }
-                      >
+                      <Typography variant="body2" color={formData.category ? "text.primary" : "text.secondary"}>
                         {formData.category || "Category not specified"}
                       </Typography>
                     </Box>
-
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                     <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
-                      <Typography
-                        variant="body1"
-                        sx={{
-                          fontWeight: 600,
-                          color: formData.price ? "#4caf50" : "#bbb",
-                        }}
-                      >
-                        {formData.price
-                          ? `LKR ${parseInt(formData.price).toLocaleString()}`
-                          : "Price not set"}
+                      <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
+                      <Typography variant="body1" sx={{ fontWeight: 600, color: formData.price ? "#4caf50" : "#bbb" }}>
+                        {formData.price ? `LKR ${Number(formData.price).toLocaleString("en-LK")}` : "Price not set"}
                       </Typography>
                     </Box>
-
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccessTime sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography
-                        variant="body2"
-                        color={
-                          formData.deliveryTime ? "text.primary" : "text.secondary"
-                        }
-                      >
+                      <Typography variant="body2" color={formData.deliveryTime ? "text.primary" : "text.secondary"}>
                         {formData.deliveryTime || "Delivery time not specified"}
                       </Typography>
                     </Box>
-
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Phone sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography
-                        variant="body2"
-                        color={formData.contact ? "text.primary" : "text.secondary"}
-                      >
+                      <Typography variant="body2" color={formData.contact ? "text.primary" : "text.secondary"}>
                         {formData.contact || "Contact not provided"}
                       </Typography>
                     </Box>
@@ -445,19 +394,15 @@ export default function NewPost() {
                   <Typography
                     variant="body2"
                     color={formData.description ? "text.primary" : "text.secondary"}
-                    sx={{ mb: 2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}
+                    sx={{ mb: 2, lineHeight: 1.7, whiteSpace: "pre-wrap", opacity: descOpacity }}
                   >
-                    {formData.description || "Description will appear here..."}
+                    {limitWords(formData.description, maxWords) || "Description will appear here..."}
                   </Typography>
 
                   {specializationsArray.length > 0 && (
                     <>
                       <Divider sx={{ my: 2 }} />
-                      <Typography
-                        variant="subtitle2"
-                        gutterBottom
-                        sx={{ fontWeight: 600, color: "#1a237e" }}
-                      >
+                      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
                         Specializations
                       </Typography>
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
@@ -466,11 +411,7 @@ export default function NewPost() {
                             key={index}
                             label={spec}
                             size="small"
-                            sx={{
-                              bgcolor: "#e3f2fd",
-                              color: "#1565c0",
-                              fontWeight: 500,
-                            }}
+                            sx={{ bgcolor: "#e3f2fd", color: "#1565c0", fontWeight: 500 }}
                           />
                         ))}
                       </Box>
@@ -478,21 +419,6 @@ export default function NewPost() {
                   )}
                 </CardContent>
               </Card>
-
-              <Box
-                sx={{
-                  mt: 2,
-                  p: 2,
-                  bgcolor: "#e8f5e9",
-                  borderRadius: 1,
-                  border: "1px solid #c8e6c9",
-                }}
-              >
-                <Typography variant="caption" color="success.dark">
-                  💡 Tip: Fill out all fields to see how your post will appear to
-                  potential clients
-                </Typography>
-              </Box>
             </Paper>
           </Grid>
         </Grid>

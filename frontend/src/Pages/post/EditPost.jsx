@@ -36,6 +36,8 @@ export default function EditPost() {
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const maxWords = 150;
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -55,6 +57,7 @@ export default function EditPost() {
           id: post._id,
         });
         if (post.image) setImagePreview(post.image);
+        setWordCount(post.description.trim().split(/\s+/).length);
       } catch (err) {
         console.error(err);
         alert("Failed to fetch post");
@@ -64,8 +67,19 @@ export default function EditPost() {
     fetchPost();
   }, [id, token, navigate]);
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    if (name === "description") {
+      const words = value.trim().split(/\s+/);
+      // If word count exceeds max, prevent typing more
+      if (words.length > maxWords) return;
+      setFormData({ ...formData, [name]: value });
+      setWordCount(words.length);
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -79,6 +93,11 @@ export default function EditPost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (wordCount > maxWords) {
+      alert(`Description must not exceed ${maxWords} words.`);
+      return;
+    }
+
     try {
       setLoading(true);
       const data = new FormData();
@@ -112,11 +131,24 @@ export default function EditPost() {
     ? formData.specializations.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
+  const limitWords = (text, maxWords) => {
+    if (!text) return "";
+    const words = text.split(" ");
+    if (words.length <= maxWords) return text;
+    return words.slice(0, maxWords).join(" ") + "...";
+  };
+
+  const isLimitReached = wordCount >= maxWords;
+
   return (
     <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
       <Container maxWidth="lg">
         <Box sx={{ mb: 4, textAlign: "left" }}>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
+          <Typography
+            variant="h3"
+            gutterBottom
+            sx={{ fontWeight: 700, color: "#1a237e" }}
+          >
             Edit Post
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
@@ -124,11 +156,15 @@ export default function EditPost() {
           </Typography>
         </Box>
 
-        <Grid container spacing={4} justifyContent="center" alignItems="flex-start">
+        <Grid container spacing={4} alignItems="stretch">
           {/* Left Column - Form */}
           <Grid item xs={12} md={6} sx={{ maxWidth: 500, width: "100%" }}>
             <Paper elevation={2} sx={{ p: 4, borderRadius: 2, bgcolor: "white" }}>
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
+              <Typography
+                variant="h5"
+                gutterBottom
+                sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}
+              >
                 Post Details
               </Typography>
 
@@ -142,16 +178,34 @@ export default function EditPost() {
                     fullWidth
                     required
                   />
-                  <TextField
-                    label="Description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    required
-                  />
+
+                  {/* Description Field with Word Count */}
+                  <Box>
+                    <TextField
+                      label="Description"
+                      name="description"
+                      value={formData.description}
+                      onChange={handleChange}
+                      fullWidth
+                      multiline
+                      minRows={3}
+                      required
+                      InputProps={{
+                        style: {
+                          opacity: isLimitReached ? 0.5 : 1,
+                        },
+                      }}
+                      helperText={`${wordCount}/${maxWords} words`}
+                      FormHelperTextProps={{
+                        sx: {
+                          textAlign: "right",
+                          color: isLimitReached ? "error.main" : "text.secondary",
+                          fontWeight: 500,
+                        },
+                      }}
+                    />
+                  </Box>
+
                   <TextField
                     label="Category"
                     name="category"
@@ -192,19 +246,43 @@ export default function EditPost() {
                     fullWidth
                     required
                   />
-                  <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
+
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<ImageIcon />}
+                  >
                     {image ? "Change Image" : "Upload Image"}
-                    <input type="file" hidden accept="image/*" onChange={handleFileChange} />
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
                   </Button>
                   {image && <Typography>{image.name}</Typography>}
 
                   <Divider />
 
                   <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    <Button variant="outlined" onClick={() => navigate("/profile")}>
+                    <Button
+                      variant="outlined"
+                      onClick={() => navigate("/profile")}
+                    >
                       Cancel
                     </Button>
-                    <Button variant="contained" type="submit" disabled={loading}>
+                    <Button
+                      variant="contained"
+                      type="submit"
+                      disabled={loading || isLimitReached}
+                      sx={{
+                        bgcolor: isLimitReached ? "grey.400" : "#1a237e",
+                        opacity: isLimitReached ? 0.6 : 1,
+                        "&:hover": {
+                          bgcolor: isLimitReached ? "grey.500" : "#0d47a1",
+                        },
+                      }}
+                    >
                       {loading ? "Updating..." : "Update Post"}
                     </Button>
                   </Stack>
@@ -225,15 +303,42 @@ export default function EditPost() {
                 top: { md: 20, xs: 0 },
               }}
             >
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
+              <Typography
+                variant="h5"
+                gutterBottom
+                sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}
+              >
                 Live Preview
               </Typography>
 
-              <Card sx={{ boxShadow: 3, borderRadius: 2, overflow: "hidden", transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)", boxShadow: 6 } }}>
+              <Card
+                sx={{
+                  boxShadow: 3,
+                  borderRadius: 2,
+                  overflow: "hidden",
+                  transition: "transform 0.2s",
+                  "&:hover": { transform: "translateY(-4px)", boxShadow: 6 },
+                }}
+              >
                 {imagePreview ? (
-                  <CardMedia component="img" height="280" image={imagePreview} alt="Preview" sx={{ objectFit: "cover" }} />
+                  <CardMedia
+                    component="img"
+                    height="280"
+                    image={imagePreview}
+                    alt="Preview"
+                    sx={{ objectFit: "cover" }}
+                  />
                 ) : (
-                  <Box sx={{ height: 280, bgcolor: "#e3f2fd", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
+                  <Box
+                    sx={{
+                      height: 280,
+                      bgcolor: "#e3f2fd",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexDirection: "column",
+                    }}
+                  >
                     <ImageIcon sx={{ fontSize: 64, color: "#90caf9" }} />
                     <Typography variant="body2" color="text.secondary" mt={2}>
                       No image uploaded
@@ -242,35 +347,73 @@ export default function EditPost() {
                 )}
 
                 <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, color: formData.title ? "#1a237e" : "#bbb", mb: 2 }}>
+                  <Typography
+                    variant="h5"
+                    gutterBottom
+                    sx={{
+                      fontWeight: 700,
+                      color: formData.title ? "#1a237e" : "#bbb",
+                      mb: 2,
+                    }}
+                  >
                     {formData.title || "Your Post Title"}
                   </Typography>
 
                   <Stack spacing={2} sx={{ mb: 3 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Category sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.category ? "text.primary" : "text.secondary"}>
+                      <Typography
+                        variant="body2"
+                        color={
+                          formData.category ? "text.primary" : "text.secondary"
+                        }
+                      >
                         {formData.category || "Category not specified"}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: formData.price ? "#4caf50" : "#bbb" }}>
-                        {formData.price ? `LKR ${Number(formData.price).toLocaleString("en-LK")}` : "Price not set"}
+                      <AccountBalanceWallet
+                        sx={{ color: "#4caf50", fontSize: 20 }}
+                      />
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontWeight: 600,
+                          color: formData.price ? "#4caf50" : "#bbb",
+                        }}
+                      >
+                        {formData.price
+                          ? `LKR ${Number(formData.price).toLocaleString(
+                              "en-LK"
+                            )}`
+                          : "Price not set"}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccessTime sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.deliveryTime ? "text.primary" : "text.secondary"}>
-                        {formData.deliveryTime || "Delivery time not specified"}
+                      <Typography
+                        variant="body2"
+                        color={
+                          formData.deliveryTime
+                            ? "text.primary"
+                            : "text.secondary"
+                        }
+                      >
+                        {formData.deliveryTime ||
+                          "Delivery time not specified"}
                       </Typography>
                     </Box>
 
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Phone sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.contact ? "text.primary" : "text.secondary"}>
+                      <Typography
+                        variant="body2"
+                        color={
+                          formData.contact ? "text.primary" : "text.secondary"
+                        }
+                      >
                         {formData.contact || "Contact not provided"}
                       </Typography>
                     </Box>
@@ -278,19 +421,49 @@ export default function EditPost() {
 
                   <Divider sx={{ my: 2 }} />
 
-                  <Typography variant="body2" color={formData.description ? "text.primary" : "text.secondary"} sx={{ mb: 2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                    {formData.description || "Description will appear here..."}
+                  <Typography
+                    variant="body2"
+                    color={
+                      formData.description ? "text.primary" : "text.secondary"
+                    }
+                    sx={{
+                      mb: 2,
+                      lineHeight: 1.7,
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    {limitWords(formData.description, 150) ||
+                      "Description will appear here..."}
                   </Typography>
 
                   {specializationsArray.length > 0 && (
                     <>
                       <Divider sx={{ my: 2 }} />
-                      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
+                      <Typography
+                        variant="subtitle2"
+                        gutterBottom
+                        sx={{ fontWeight: 600, color: "#1a237e" }}
+                      >
                         Specializations
                       </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
+                      >
                         {specializationsArray.map((spec, index) => (
-                          <Chip key={index} label={spec} size="small" sx={{ bgcolor: "#e3f2fd", color: "#1565c0", fontWeight: 500 }} />
+                          <Chip
+                            key={index}
+                            label={spec}
+                            size="small"
+                            sx={{
+                              bgcolor: "#e3f2fd",
+                              color: "#1565c0",
+                              fontWeight: 500,
+                            }}
+                          />
                         ))}
                       </Box>
                     </>
