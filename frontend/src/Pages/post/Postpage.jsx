@@ -13,7 +13,7 @@ import {
   Divider,
   Typography,
 } from "@mui/material";
-import { Timer, AccountBalanceWallet } from "@mui/icons-material";
+import { Timer, AccountBalanceWallet, Image as ImageIcon } from "@mui/icons-material";
 import axios from "axios";
 import ItemForm from "../../Components/post/PostsForm";
 import ItemDetails from "../../Components/post/PostsDetailsview";
@@ -39,19 +39,40 @@ function stringAvatar(name) {
   };
 }
 
-// --- Format delivery time: "1 day" or "x days" ---
+// --- Format delivery time ---
 function formatDeliveryTime(time) {
   const number = parseInt(time);
-  if (isNaN(number)) return time; // fallback
+  if (isNaN(number)) return time;
   return `${number} ${number === 1 ? "day" : "days"}`;
 }
 
-// --- Truncate description to N words ---
+// --- Truncate long text ---
 function truncateWords(text, wordLimit) {
   if (!text) return "";
   const words = text.trim().split(/\s+/);
   if (words.length <= wordLimit) return text;
   return words.slice(0, wordLimit).join(" ") + "...";
+}
+
+// --- Image placeholder component ---
+function ImagePlaceholder() {
+  return (
+    <Box
+      sx={{
+        height: "100%",
+        bgcolor: "#e3f2fd",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+      }}
+    >
+      <ImageIcon sx={{ fontSize: 64, color: "#90caf9" }} />
+      <Typography variant="body2" color="text.secondary" mt={2}>
+        No image uploaded
+      </Typography>
+    </Box>
+  );
 }
 
 export default function ItemsPage() {
@@ -72,6 +93,7 @@ export default function ItemsPage() {
   });
   const [image, setImage] = useState(null);
 
+  // --- Fetch items from API ---
   useEffect(() => {
     const fetchPosts = async () => {
       try {
@@ -87,6 +109,7 @@ export default function ItemsPage() {
     fetchPosts();
   }, []);
 
+  // --- Form handlers ---
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
   const handleFileChange = (e) => setImage(e.target.files[0]);
 
@@ -96,10 +119,12 @@ export default function ItemsPage() {
       const data = new FormData();
       Object.keys(formData).forEach((key) => data.append(key, formData[key]));
       if (image) data.append("image", image);
+
       if (formData.specializations.trim() !== "") {
         const arr = formData.specializations.split(",").map((s) => s.trim());
         data.set("specializations", JSON.stringify(arr));
       }
+
       await axios.post(API_URL, data, { headers: { "Content-Type": "multipart/form-data" } });
 
       setFormData({
@@ -114,6 +139,7 @@ export default function ItemsPage() {
       setImage(null);
       setIsFormOpen(false);
 
+      // Refresh list
       const res = await axios.get(API_URL);
       setItems(res.data);
     } catch (err) {
@@ -121,6 +147,7 @@ export default function ItemsPage() {
     }
   };
 
+  // --- Loading / error states ---
   if (loading)
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
@@ -135,6 +162,7 @@ export default function ItemsPage() {
       </Box>
     );
 
+  // --- Main Render ---
   return (
     <Container sx={{ mt: 4, mb: 4 }}>
       {items.map((item) => (
@@ -153,18 +181,18 @@ export default function ItemsPage() {
             "&:hover": { transform: "translateY(-4px)", boxShadow: "0 8px 25px rgba(0,0,0,0.2)" },
           }}
         >
-          {/* Left Image */}
+          {/* Left Image Area */}
           <Box sx={{ flex: "0 0 280px", height: "100%" }}>
-            <CardMedia
-              component="img"
-              image={
-                item.image
-                  ? `http://localhost:5000${item.image}`
-                  : "https://via.placeholder.com/280x280.png?text=No+Image"
-              }
-              alt={item.title}
-              sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-            />
+            {item.image ? (
+              <CardMedia
+                component="img"
+                image={`http://localhost:5000${item.image}`}
+                alt={item.title}
+                sx={{ width: "100%", height: "100%", objectFit: "cover" }}
+              />
+            ) : (
+              <ImagePlaceholder />
+            )}
           </Box>
 
           {/* Right Content */}
@@ -184,7 +212,13 @@ export default function ItemsPage() {
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ overflow: "hidden", textOverflow: "ellipsis", display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical" }}
+                sx={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  display: "-webkit-box",
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: "vertical",
+                }}
               >
                 {truncateWords(item.description, 20)}{" "}
                 {item.description.split(/\s+/).length > 20 && (
@@ -211,8 +245,8 @@ export default function ItemsPage() {
               </Stack>
 
               <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
-                <Avatar {...stringAvatar(item.owner?.name || "John Doe")} />
-                <Typography variant="body2">{item.owner?.name || "John Doe"}</Typography>
+                <Avatar {...stringAvatar(item.owner?.name || "anonymous")} />
+                <Typography variant="body2">{item.owner?.name || "anonymous"}</Typography>
               </Stack>
             </Box>
 

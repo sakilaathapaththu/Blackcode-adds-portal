@@ -12,17 +12,39 @@ import {
   Button,
   Chip,
 } from "@mui/material";
-import { ExpandMore, Timer, AccountBalanceWallet } from "@mui/icons-material";
+import { ExpandMore, Timer, AccountBalanceWallet, Image as ImageIcon } from "@mui/icons-material";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = "http://localhost:5000/api/posts";
 
-// Helper function to format delivery time
+// Helper: Format delivery time
 function formatDeliveryTime(time) {
   const number = parseInt(time);
-  if (isNaN(number)) return time; // fallback for invalid values
+  if (isNaN(number)) return time;
   return `${number} ${number === 1 ? "day" : "days"}`;
+}
+
+// --- Image Placeholder Component ---
+function ImagePlaceholder() {
+  return (
+    <Box
+      sx={{
+        height: 300,
+        bgcolor: "#e3f2fd",
+        borderRadius: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "column",
+      }}
+    >
+      <ImageIcon sx={{ fontSize: 64, color: "#90caf9" }} />
+      <Typography variant="body2" color="text.secondary" mt={2}>
+        No image uploaded
+      </Typography>
+    </Box>
+  );
 }
 
 export default function Profile() {
@@ -62,13 +84,8 @@ export default function Profile() {
     }
   };
 
-  const handleEdit = (post) => {
-    navigate(`/posts/edit/${post._id}`);
-  };
-
-  const handleAddPost = () => {
-    navigate("/posts/new");
-  };
+  const handleEdit = (post) => navigate(`/posts/edit/${post._id}`);
+  const handleAddPost = () => navigate("/posts/new");
 
   if (loading)
     return (
@@ -91,6 +108,7 @@ export default function Profile() {
         <pre>{JSON.stringify(user, null, 2)}</pre>
       </div>
 
+      {/* Header */}
       <Box sx={{ mb: 4, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <Typography variant="h4">{user?.name}'s Profile</Typography>
         <Button
@@ -109,6 +127,7 @@ export default function Profile() {
         </Button>
       </Box>
 
+      {/* User Posts */}
       {posts.length === 0 ? (
         <Typography color="text.secondary">You haven't created any posts yet.</Typography>
       ) : (
@@ -143,8 +162,17 @@ export default function Profile() {
 
             <AccordionDetails>
               <Stack spacing={2}>
-                {post.image && (
-                  <Box sx={{ position: "relative", width: "100%", height: 300, borderRadius: 1, overflow: "hidden" }}>
+                {/* Image or Placeholder */}
+                {post.image ? (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      width: "100%",
+                      height: 300,
+                      borderRadius: 1,
+                      overflow: "hidden",
+                    }}
+                  >
                     <Box
                       sx={{
                         position: "absolute",
@@ -174,10 +202,14 @@ export default function Profile() {
                       }}
                     />
                   </Box>
+                ) : (
+                  <ImagePlaceholder />
                 )}
 
+                {/* Description */}
                 <Typography variant="body2">{post.description}</Typography>
 
+                {/* Action Buttons */}
                 <Stack direction="row" spacing={2}>
                   <Button
                     variant="contained"
