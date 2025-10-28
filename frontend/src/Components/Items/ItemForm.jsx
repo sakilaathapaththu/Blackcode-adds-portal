@@ -1,5 +1,14 @@
 // src/Components/Items/ItemForm.jsx
 import React from "react";
+import {
+  Box,
+  Typography,
+  TextField,
+  Button,
+  Stack,
+  Paper,
+  Divider,
+} from "@mui/material";
 
 export default function ItemForm({
   formData,
@@ -9,99 +18,147 @@ export default function ItemForm({
   onClose,
 }) {
   return (
-    <div
-      style={{
+    <Box
+      sx={{
         position: "fixed",
         top: 0,
         left: 0,
         width: "100vw",
         height: "100vh",
-        backgroundColor: "rgba(0,0,0,0.5)",
+        bgcolor: "rgba(0,0,0,0.5)",
         display: "flex",
         justifyContent: "center",
         alignItems: "center",
-        zIndex: 9999,
+        zIndex: 1200,
+        px: 2,
       }}
     >
-      <div
-        style={{
-          background: "#fff",
-          padding: "20px",
-          borderRadius: "8px",
-          width: "400px",
+      <Paper
+        elevation={8}
+        sx={{
+          width: "100%",
+          maxWidth: 500,
+          borderRadius: 3,
+          p: 4,
+          position: "relative",
           maxHeight: "90vh",
           overflowY: "auto",
         }}
       >
-        <button
+        {/* Close Button */}
+        <Button
           onClick={onClose}
-          style={{
-            float: "right",
-            background: "red",
+          sx={{
+            position: "absolute",
+            top: 16,
+            right: 16,
+            minWidth: "auto",
+            bgcolor: "error.main",
             color: "#fff",
-            border: "none",
-            borderRadius: "4px",
-            padding: "2px 8px",
-            cursor: "pointer",
+            "&:hover": { bgcolor: "error.dark" },
+            borderRadius: 1,
+            px: 1.5,
           }}
         >
           X
-        </button>
-        <h2>Create Item</h2>
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "grid", gap: "10px", marginTop: "10px" }}
-        >
-          <input
-            type="text"
+        </Button>
+
+        <Typography variant="h5" fontWeight={600} gutterBottom>
+          Create New Item
+        </Typography>
+        <Divider sx={{ mb: 3 }} />
+
+        <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <TextField
+            label="Title"
             name="title"
-            placeholder="Title"
             value={formData.title}
             onChange={handleChange}
             required
+            fullWidth
           />
-          <textarea
+
+          <TextField
+            label="Description"
             name="description"
-            placeholder="Description"
             value={formData.description}
             onChange={handleChange}
+            multiline
+            rows={3}
+            fullWidth
           />
-          <input
-            type="text"
+
+          <TextField
+            label="Category"
             name="category"
-            placeholder="Category"
             value={formData.category}
             onChange={handleChange}
             required
+            fullWidth
           />
-          <input
-            type="number"
+
+          <TextField
+            label="Price (LKR)"
             name="price"
-            placeholder="Price"
             value={formData.price}
             onChange={handleChange}
+            type="number"
             required
+            fullWidth
           />
-          <input
-            type="text"
+
+          <TextField
+            label="Delivery Time"
             name="deliveryTime"
-            placeholder="Delivery Time (e.g. 2 Days)"
             value={formData.deliveryTime}
             onChange={handleChange}
+            placeholder="e.g., 2 Days"
+            fullWidth
           />
-          <input
-            type="text"
+
+          <TextField
+            label="Specializations"
             name="specializations"
-            placeholder="Specializations (comma separated)"
             value={formData.specializations}
             onChange={handleChange}
+            placeholder="Separate with commas"
+            fullWidth
           />
-          <input type="file" onChange={handleFileChange} accept="image/*" />
-          <button type="submit" style={{ marginTop: "10px" }}>
-            Post AD
-          </button>
-        </form>
-      </div>
-    </div>
+
+          <Button
+            variant="outlined"
+            component="label"
+            sx={{ textTransform: "none" }}
+          >
+            Upload Image
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              onChange={handleFileChange}
+            />
+          </Button>
+
+          <Stack direction="row" spacing={2} sx={{ mt: 2 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              color="primary"
+              fullWidth
+            >
+              Post AD
+            </Button>
+            <Button
+              variant="outlined"
+              color="error"
+              fullWidth
+              onClick={onClose}
+            >
+              Cancel
+            </Button>
+          </Stack>
+        </Box>
+      </Paper>
+    </Box>
   );
 }

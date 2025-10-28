@@ -4,7 +4,6 @@ import {
   Toolbar,
   Typography,
   Container,
-  Grid,
   Card,
   CardContent,
   CardMedia,
@@ -13,24 +12,50 @@ import {
   Button,
   Stack,
   Avatar,
-  Rating,
   CircularProgress,
+  Divider,
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
 import axios from "axios";
 import ItemForm from "../Components/Items/ItemForm";
-import ItemDetails from "../Components/Items/ItemDetailsview"; // 🔹 Import details modal
+import ItemDetails from "../Components/Items/ItemDetailsview";
 
-const API_URL = "http://localhost:5000/api/items";
+// ✅ Use the backend /api/posts route
+const API_URL = "http://localhost:5000/api/posts";
+
+// --- Helper functions for letter avatar ---
+function stringToColor(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).slice(-2);
+  }
+  return color;
+}
+
+function stringAvatar(name) {
+  return {
+    sx: {
+      bgcolor: stringToColor(name),
+      width: 28,
+      height: 28,
+    },
+    children: name[0].toUpperCase(),
+  };
+}
 
 export default function ItemsPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null); // 🔹 Track selected item
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [success, setSuccess] = useState("");
 
-  // Form state
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -38,33 +63,31 @@ export default function ItemsPage() {
     price: "",
     deliveryTime: "",
     specializations: "",
+    contact: "",
   });
-  const [posterImage, setPosterImage] = useState(null);
-  const [success, setSuccess] = useState("");
+  const [image, setImage] = useState(null);
 
+  // ✅ Fetch posts from backend
   useEffect(() => {
-    const fetchItems = async () => {
+    const fetchPosts = async () => {
       try {
         const res = await axios.get(API_URL);
         setItems(res.data);
       } catch (err) {
         console.error(err);
-        setError("Failed to load items.");
+        setError("Failed to load posts.");
       } finally {
         setLoading(false);
       }
     };
-    fetchItems();
+    fetchPosts();
   }, []);
 
-  const handleChange = (e) => {
+  const handleChange = (e) =>
     setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleFileChange = (e) => setImage(e.target.files[0]);
 
-  const handleFileChange = (e) => {
-    setPosterImage(e.target.files[0]);
-  };
-
+  // ✅ Submit new post
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -72,22 +95,22 @@ export default function ItemsPage() {
 
     try {
       const data = new FormData();
-      for (let key in formData) {
-        data.append(key, formData[key]);
+      Object.keys(formData).forEach((key) => data.append(key, formData[key]));
+      if (image) data.append("image", image);
+
+      // Convert specializations to JSON array
+      if (formData.specializations.trim() !== "") {
+        const specializationsArray = formData.specializations
+          .split(",")
+          .map((s) => s.trim());
+        data.set("specializations", JSON.stringify(specializationsArray));
       }
-      if (posterImage) {
-        data.append("posterImage", posterImage);
-      }
-      data.set(
-        "specializations",
-        JSON.stringify(formData.specializations.split(","))
-      );
 
       await axios.post(API_URL, data, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setSuccess("Item created successfully!");
+      setSuccess("Post created successfully!");
       setFormData({
         title: "",
         description: "",
@@ -95,19 +118,20 @@ export default function ItemsPage() {
         price: "",
         deliveryTime: "",
         specializations: "",
+        contact: "",
       });
-      setPosterImage(null);
+      setImage(null);
       setIsFormOpen(false);
 
-      // Refresh items list
+      // Refresh list
       const res = await axios.get(API_URL);
       setItems(res.data);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create item");
+      setError(err.response?.data?.message || "Failed to create post");
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
       <Box
         sx={{
@@ -120,15 +144,13 @@ export default function ItemsPage() {
         <CircularProgress />
       </Box>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
       <Box sx={{ textAlign: "center", mt: 5 }}>
         <Typography color="error">{error}</Typography>
       </Box>
     );
-  }
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -138,8 +160,6 @@ export default function ItemsPage() {
           <Typography variant="h6" sx={{ flexGrow: 1 }}>
             Assignment Helpers Marketplace
           </Typography>
-
-          {/* Post Your AD Button */}
           <button
             onClick={() => setIsFormOpen(true)}
             style={{
@@ -156,121 +176,131 @@ export default function ItemsPage() {
         </Toolbar>
       </AppBar>
 
+      {/* Posts List */}
       <Container sx={{ mt: 4, mb: 4 }}>
-        <Grid container spacing={4}>
-          {items.map((item) => (
-            <Grid item xs={12} sm={6} md={4} key={item._id}>
-              <Card
+        {items.map((item) => (
+          <Card
+            key={item._id}
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", md: "row" },
+              alignItems: "stretch",
+              mb: 3,
+              borderRadius: 3,
+              overflow: "hidden",
+              height: 250,
+              boxShadow: "0 4px 15px rgba(0,0,0,0.1)",
+              transition: "transform 0.3s, box-shadow 0.3s",
+              "&:hover": {
+                transform: "translateY(-4px)",
+                boxShadow: "0 8px 25px rgba(0,0,0,0.2)",
+              },
+            }}
+          >
+            {/* Left Image */}
+            <Box
+              sx={{
+                flex: "0 0 280px",
+                height: "100%",
+              }}
+            >
+              <CardMedia
+                component="img"
+                image={
+                  item.image
+                    ? `http://localhost:5000${item.image}`
+                    : "https://via.placeholder.com/280x200.png?text=No+Image"
+                }
+                alt={item.title}
                 sx={{
-                  display: "flex",
-                  flexDirection: "column",
+                  width: "100%",
                   height: "100%",
-                  transition: "transform 0.3s, box-shadow 0.3s",
-                  "&:hover": {
-                    transform: "translateY(-5px)",
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
-                  },
+                  objectFit: "cover",
                 }}
-              >
-                <CardMedia
-                  component="img"
-                  height="180"
-                  image={`${API_URL}/${item._id}/poster`}
-                  alt={item.title}
-                  onError={(e) => {
-                    e.target.src =
-                      "https://via.placeholder.com/400x200.png?text=No+Image";
+              />
+            </Box>
+
+            {/* Right Content */}
+            <CardContent
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                p: 2.5,
+                overflow: "hidden",
+              }}
+            >
+              <Box sx={{ flex: 1, minHeight: 0 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
+                  <Chip label={item.category} color="primary" size="small" />
+                  <Typography variant="body2" color="text.secondary">
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </Typography>
+                </Stack>
+
+                <Typography variant="h6" sx={{ mt: 1, mb: 0.5 }}>
+                  {item.title}
+                </Typography>
+
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
                   }}
-                />
+                >
+                  {item.description}
+                </Typography>
 
-                <CardContent sx={{ flexGrow: 1 }}>
-                  <Chip
-                    label={item.category}
-                    color="primary"
-                    size="small"
-                    sx={{ mb: 1 }}
-                  />
-                  <Typography variant="h6" gutterBottom>
-                    {item.title}
+                {/* ✅ User Avatar with letter & color */}
+                <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1 }}>
+                  <Avatar {...stringAvatar(item.owner?.name || "John Doe")} />
+                  <Typography variant="body2">
+                    {item.owner?.name || "John Doe"}
                   </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 2 }}
-                  >
-                    {item.description}
-                  </Typography>
+                </Stack>
 
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{ mb: 1 }}
-                  >
-                    <Avatar
-                      src="https://randomuser.me/api/portraits/men/32.jpg"
-                      alt="Provider"
-                      sx={{ width: 28, height: 28 }}
-                    />
-                    <Typography variant="body2">John Doe</Typography>
+                <Stack direction="row" spacing={3} sx={{ mt: 1 }}>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Timer fontSize="small" />
+                    <Typography variant="body2">{item.deliveryTime}</Typography>
                   </Stack>
-
-                  <Stack direction="row" spacing={2} sx={{ mb: 1 }}>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <Timer fontSize="small" />
-                      <Typography variant="body2">
-                        {item.deliveryTime}
-                      </Typography>
-                    </Stack>
-                    <Stack direction="row" alignItems="center" spacing={0.5}>
-                      <AttachMoney fontSize="small" />
-                      <Typography variant="body2">
-                        {item.price.toLocaleString()} LKR
-                      </Typography>
-                    </Stack>
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <AttachMoney fontSize="small" />
+                    <Typography variant="body2">
+                      {item.price.toLocaleString()} LKR
+                    </Typography>
                   </Stack>
+                </Stack>
+              </Box>
 
-                  <Stack
-                    direction="row"
-                    spacing={1}
-                    alignItems="center"
-                    sx={{ mb: 1 }}
-                  >
-                    <Rating value={4.5} precision={0.5} size="small" readOnly />
-                    <Typography variant="body2">(12 reviews)</Typography>
-                  </Stack>
-
-                  <Box
-                    sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}
-                  >
-                    {item.specializations?.map((spec, idx) => (
-                      <Chip
-                        key={idx}
-                        label={spec}
-                        size="small"
-                        color="secondary"
-                      />
-                    ))}
-                  </Box>
-                </CardContent>
-
-                <Box sx={{ p: 2 }}>
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    color="primary"
-                    onClick={() => setSelectedItem(item)} // 🔹 Open details modal
-                  >
-                    View Details
-                  </Button>
-                </Box>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+              <Box sx={{ mt: 1 }}>
+                <Divider sx={{ mb: 1 }} />
+                <Button
+                  variant="contained"
+                  color="primary"
+                  size="small"
+                  onClick={() => setSelectedItem(item)}
+                  fullWidth
+                >
+                  View Details
+                </Button>
+              </Box>
+            </CardContent>
+          </Card>
+        ))}
       </Container>
 
-      {/* Modal Popup */}
+      {/* Modals */}
       {isFormOpen && (
         <ItemForm
           formData={formData}
@@ -281,12 +311,8 @@ export default function ItemsPage() {
         />
       )}
 
-      {/* Details Modal */}
       {selectedItem && (
-        <ItemDetails
-          item={selectedItem}
-          onClose={() => setSelectedItem(null)}
-        />
+        <ItemDetails item={selectedItem} onClose={() => setSelectedItem(null)} />
       )}
     </Box>
   );

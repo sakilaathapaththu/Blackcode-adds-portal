@@ -1,4 +1,3 @@
-// src/Components/Items/ItemDetails.jsx
 import React from "react";
 import {
   Box,
@@ -9,9 +8,33 @@ import {
   Button,
   Rating,
   Divider,
-  CardMedia,
 } from "@mui/material";
 import { Timer, AttachMoney } from "@mui/icons-material";
+
+// --- Helper functions for letter avatar ---
+function stringToColor(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).slice(-2);
+  }
+  return color;
+}
+
+function stringAvatar(name) {
+  return {
+    sx: {
+      bgcolor: stringToColor(name),
+      width: 36,
+      height: 36,
+    },
+    children: name[0].toUpperCase(),
+  };
+}
 
 export default function ItemDetails({ item, onClose }) {
   if (!item) return null;
@@ -36,41 +59,35 @@ export default function ItemDetails({ item, onClose }) {
           bgcolor: "#fff",
           borderRadius: 3,
           width: "90%",
-          maxWidth: 700,
+          maxWidth: 600,
           maxHeight: "90vh",
           overflowY: "auto",
           p: 3,
           boxShadow: 6,
         }}
       >
-        <CardMedia
-          component="img"
-          height="250"
-          image={`http://localhost:5000/api/items/${item._id}/poster`}
-          alt={item.title}
-          onError={(e) =>
-            (e.target.src =
-              "https://via.placeholder.com/400x200.png?text=No+Image")
-          }
-          sx={{ borderRadius: 2, mb: 2 }}
-        />
-
+        {/* Category */}
         <Chip label={item.category} color="primary" sx={{ mb: 1 }} />
+
+        {/* Title */}
         <Typography variant="h5" gutterBottom>
           {item.title}
         </Typography>
+
+        {/* Description */}
         <Typography variant="body1" sx={{ mb: 2 }}>
           {item.description}
         </Typography>
 
+        {/* Provider */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-          <Avatar
-            src="https://randomuser.me/api/portraits/men/32.jpg"
-            alt="Provider"
-          />
-          <Typography variant="body2">John Doe</Typography>
+          <Avatar {...stringAvatar(item.owner?.name || "John Doe")} />
+          <Typography variant="body2">
+            {item.owner?.name || "John Doe"}
+          </Typography>
         </Stack>
 
+        {/* Delivery & Price */}
         <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Timer fontSize="small" />
@@ -82,6 +99,7 @@ export default function ItemDetails({ item, onClose }) {
           </Stack>
         </Stack>
 
+        {/* Ratings */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <Rating value={4.5} precision={0.5} readOnly />
           <Typography variant="body2">(12 reviews)</Typography>
@@ -89,6 +107,7 @@ export default function ItemDetails({ item, onClose }) {
 
         <Divider sx={{ mb: 2 }} />
 
+        {/* Specializations */}
         <Typography variant="subtitle1" sx={{ mb: 1 }}>
           Specializations
         </Typography>
@@ -98,12 +117,15 @@ export default function ItemDetails({ item, onClose }) {
           ))}
         </Box>
 
+        {/* Contact */}
         <Typography variant="h6" gutterBottom>
-          Book This Service
+          Contact Provider
         </Typography>
         <Typography variant="body2" sx={{ mb: 2 }}>
-          Secure your booking by contacting the provider directly.
+          📞 {item.contact || "Not Provided"}
         </Typography>
+
+        {/* Actions */}
         <Button variant="contained" color="success" fullWidth sx={{ mb: 1 }}>
           📅 Book Now
         </Button>
