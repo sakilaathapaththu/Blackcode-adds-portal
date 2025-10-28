@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { Box, Typography, Paper, CircularProgress } from "@mui/material";
 import Sidebar from "../Components/Home/Sortingpanel";
-import ItemPage from "./Posts2page";
+import ItemPage from "./post/Postpage";
 
 export default function Home() {
   

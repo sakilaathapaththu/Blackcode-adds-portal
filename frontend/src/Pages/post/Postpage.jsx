@@ -15,8 +15,8 @@ import {
 } from "@mui/material";
 import { Timer, AccountBalanceWallet } from "@mui/icons-material";
 import axios from "axios";
-import ItemForm from "../Components/Items/PostsForm";
-import ItemDetails from "../Components/Items/PostsDetailsview";
+import ItemForm from "../../Components/post/PostsForm";
+import ItemDetails from "../../Components/post/PostsDetailsview";
 
 const API_URL = "http://localhost:5000/api/posts";
 

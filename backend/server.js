@@ -5,7 +5,6 @@ import cors from "cors";
 import path from "path";
 import { connectDB } from "./db/db.js";
 import authRoutes from "./routes/authRoutes.js";
-import itemRoutes from "./routes/itemRoutes.js";
 import postRoutes from "./routes/postRoutes.js";
 
 dotenv.config();
@@ -21,7 +20,6 @@ app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/items", itemRoutes);
 app.use("/api/posts", postRoutes);
 
 // Health check

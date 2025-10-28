@@ -11,7 +11,7 @@ import Dashboard from "./Pages/Dashboard";
 import Profile from "./Pages/Profile";
 import HomepageNavbar from "./Components/NavBar/Homepagenavbar";
 import AuthPage from "./Pages/Auth/AuthPage";
-import TestPosts from "./Pages/PostsPage";
+import TestPosts from "./Pages/test";
 import NewPost from "./Pages/post/NewPost";
 import EditPost from "./Pages/post/EditPost";
 
