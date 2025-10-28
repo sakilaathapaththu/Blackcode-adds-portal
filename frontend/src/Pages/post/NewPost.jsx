@@ -43,6 +43,7 @@ export default function NewPost() {
   });
 
   const [errors, setErrors] = useState({});
+  const [touched, setTouched] = useState({});
   const [image, setImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -51,10 +52,40 @@ export default function NewPost() {
 
   const isLimitReached = wordCount >= maxWords;
 
-  // Accurate word count function
   const countWords = (text) => {
     if (!text) return 0;
     return text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
+  };
+
+  const validate = (data = formData) => {
+    let temp = {};
+    if (touched.title) temp.title = data.title.trim() ? "" : "Title is required.";
+    if (touched.category)
+      temp.category = data.category.trim() ? "" : "Category is required.";
+    if (touched.price) temp.price = data.price ? "" : "Price is required.";
+    if (touched.deliveryTime)
+      temp.deliveryTime = data.deliveryTime.trim()
+        ? ""
+        : "Delivery time is required.";
+    if (touched.contact) {
+      if (!data.contact.trim()) temp.contact = "Contact is required.";
+      else if (!/^\d{10}$/.test(data.contact.trim()))
+        temp.contact = "Phone number must be exactly 10 digits.";
+      else temp.contact = "";
+    }
+    if (touched.description)
+      temp.description =
+        countWords(data.description) <= maxWords
+          ? ""
+          : `Description cannot exceed ${maxWords} words.`;
+
+    return temp;
+  };
+
+  const handleBlur = (e) => {
+    const { name } = e.target;
+    setTouched({ ...touched, [name]: true });
+    setErrors(validate({ ...formData, [name]: formData[name] }));
   };
 
   const handleChange = (e) => {
@@ -63,12 +94,16 @@ export default function NewPost() {
     if (name === "description") {
       const words = countWords(value);
       setWordCount(words);
-      if (words <= maxWords) {
-        setFormData({ ...formData, [name]: value });
-      }
-    } else {
-      setFormData({ ...formData, [name]: value });
+      if (words <= maxWords) setFormData({ ...formData, [name]: value });
+      return;
     }
+
+    if (name === "contact") {
+      if (!/^\d*$/.test(value)) return;
+      if (value.length > 10) return;
+    }
+
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleFileChange = (e) => {
@@ -81,24 +116,17 @@ export default function NewPost() {
     }
   };
 
-  const validate = () => {
-    let temp = {};
-    temp.title = formData.title ? "" : "Title is required.";
-    temp.description =
-      countWords(formData.description) <= maxWords
-        ? ""
-        : `Description cannot exceed ${maxWords} words.`;
-    temp.category = formData.category ? "" : "Category is required.";
-    temp.price = formData.price ? "" : "Price is required.";
-    temp.deliveryTime = formData.deliveryTime ? "" : "Delivery time is required.";
-    temp.contact = formData.contact ? "" : "Contact is required.";
-    setErrors(temp);
-    return Object.values(temp).every((x) => x === "");
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const allTouched = Object.keys(formData).reduce(
+      (acc, key) => ({ ...acc, [key]: true }),
+      {}
+    );
+    setTouched(allTouched);
+    const validation = validate(formData);
+    setErrors(validation);
+
+    if (Object.values(validation).some((x) => x !== "")) return;
 
     try {
       setLoading(true);
@@ -129,7 +157,6 @@ export default function NewPost() {
     ? formData.specializations.split(",").map((s) => s.trim()).filter(Boolean)
     : [];
 
-  // Truncate text for live preview
   const limitWords = (text, max) => {
     if (!text) return "";
     const words = text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
@@ -144,11 +171,20 @@ export default function NewPost() {
       ? 0.4
       : 1;
 
+  const isFormInvalid =
+    isLimitReached ||
+    loading ||
+    Object.values(errors).some((v) => v !== "");
+
   return (
     <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
       <Container maxWidth="lg">
         <Box sx={{ mb: 4, textAlign: "left" }}>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
+          <Typography
+            variant="h3"
+            gutterBottom
+            sx={{ fontWeight: 700, color: "#1a237e" }}
+          >
             Create New Post
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
@@ -173,40 +209,70 @@ export default function NewPost() {
             >
               <Box component="form" onSubmit={handleSubmit}>
                 <Stack spacing={3}>
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
+                  <Typography
+                    variant="h5"
+                    gutterBottom
+                    sx={{ fontWeight: 600, color: "#1a237e" }}
+                  >
                     Post Details
                   </Typography>
 
-                  <TextField
-                    label="Title"
-                    name="title"
-                    value={formData.title}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    error={!!errors.title}
-                    helperText={errors.title}
-                  />
+                  {[
+                    { label: "Title", name: "title" },
+                    { label: "Category", name: "category" },
+                    { label: "Price (LKR)", name: "price", type: "number" },
+                    { label: "Delivery Time", name: "deliveryTime" },
+                    { label: "Contact", name: "contact" },
+                  ].map((field) => (
+                    <TextField
+                      key={field.name}
+                      {...field}
+                      value={formData[field.name]}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      fullWidth
+                      required
+                      error={touched[field.name] && !!errors[field.name]}
+                      helperText={touched[field.name] ? errors[field.name] : ""}
+                      InputProps={{
+                        style: {
+                          opacity: touched[field.name] && errors[field.name] ? 0.5 : 1,
+                        },
+                      }}
+                    />
+                  ))}
 
-                  {/* Description Field */}
+                  {/* Description */}
                   <Box>
                     <TextField
                       label="Description"
                       name="description"
                       value={formData.description}
                       onChange={handleChange}
+                      onBlur={handleBlur}
                       fullWidth
                       multiline
                       minRows={3}
                       required
-                      InputProps={{ style: { opacity: isLimitReached ? 0.5 : 1 } }}
-                      helperText={`${wordCount}/${maxWords} words`}
+                      error={touched.description && !!errors.description}
+                      helperText={
+                        touched.description
+                          ? errors.description ||
+                            `${wordCount}/${maxWords} words`
+                          : `${wordCount}/${maxWords} words`
+                      }
                       FormHelperTextProps={{
                         sx: {
                           textAlign: "right",
-                          color: isLimitReached ? "error.main" : "text.secondary",
+                          color:
+                            isLimitReached || errors.description
+                              ? "error.main"
+                              : "text.secondary",
                           fontWeight: 500,
                         },
+                      }}
+                      InputProps={{
+                        style: { opacity: isLimitReached ? 0.5 : 1 },
                       }}
                     />
                     <LinearProgress
@@ -225,37 +291,6 @@ export default function NewPost() {
                   </Box>
 
                   <TextField
-                    label="Category"
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    error={!!errors.category}
-                    helperText={errors.category}
-                  />
-                  <TextField
-                    label="Price (LKR)"
-                    name="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    error={!!errors.price}
-                    helperText={errors.price}
-                  />
-                  <TextField
-                    label="Delivery Time"
-                    name="deliveryTime"
-                    value={formData.deliveryTime}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    error={!!errors.deliveryTime}
-                    helperText={errors.deliveryTime}
-                  />
-                  <TextField
                     label="Specializations (comma separated)"
                     name="specializations"
                     value={formData.specializations}
@@ -264,23 +299,26 @@ export default function NewPost() {
                     placeholder="React, Node.js, MongoDB"
                     helperText="Separate each specialization with a comma"
                   />
-                  <TextField
-                    label="Contact"
-                    name="contact"
-                    value={formData.contact}
-                    onChange={handleChange}
-                    fullWidth
-                    required
-                    error={!!errors.contact}
-                    helperText={errors.contact}
-                  />
 
-                  <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
+                  <Button
+                    variant="outlined"
+                    component="label"
+                    startIcon={<ImageIcon />}
+                  >
                     {image ? "Change Image" : "Upload Image"}
-                    <input type="file" hidden accept="image/*" onChange={handleFileChange} />
+                    <input
+                      type="file"
+                      hidden
+                      accept="image/*"
+                      onChange={handleFileChange}
+                    />
                   </Button>
                   {image && (
-                    <Typography variant="caption" color="success.main" sx={{ mt: 1, display: "block" }}>
+                    <Typography
+                      variant="caption"
+                      color="success.main"
+                      sx={{ mt: 1, display: "block" }}
+                    >
                       ✓ {image.name}
                     </Typography>
                   )}
@@ -293,11 +331,13 @@ export default function NewPost() {
                     <Button
                       variant="contained"
                       type="submit"
-                      disabled={loading || isLimitReached}
+                      disabled={isFormInvalid}
                       sx={{
-                        bgcolor: isLimitReached ? "grey.400" : "#1a237e",
-                        opacity: isLimitReached ? 0.6 : 1,
-                        "&:hover": { bgcolor: isLimitReached ? "grey.500" : "#0d47a1" },
+                        bgcolor: isFormInvalid ? "grey.400" : "#1a237e",
+                        opacity: isFormInvalid ? 0.6 : 1,
+                        "&:hover": {
+                          bgcolor: isFormInvalid ? "grey.500" : "#0d47a1",
+                        },
                       }}
                     >
                       {loading ? "Creating..." : "Create Post"}
@@ -320,7 +360,11 @@ export default function NewPost() {
                 top: { md: 20, xs: 0 },
               }}
             >
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
+              <Typography
+                variant="h5"
+                gutterBottom
+                sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}
+              >
                 Live Preview
               </Typography>
 
@@ -334,7 +378,13 @@ export default function NewPost() {
                 }}
               >
                 {imagePreview ? (
-                  <CardMedia component="img" height="280" image={imagePreview} alt="Preview" sx={{ objectFit: "cover" }} />
+                  <CardMedia
+                    component="img"
+                    height="280"
+                    image={imagePreview}
+                    alt="Preview"
+                    sx={{ objectFit: "cover" }}
+                  />
                 ) : (
                   <Box
                     sx={{
@@ -357,7 +407,11 @@ export default function NewPost() {
                   <Typography
                     variant="h5"
                     gutterBottom
-                    sx={{ fontWeight: 700, color: formData.title ? "#1a237e" : "#bbb", mb: 2 }}
+                    sx={{
+                      fontWeight: 700,
+                      color: formData.title ? "#1a237e" : "#bbb",
+                      mb: 2,
+                    }}
                   >
                     {formData.title || "Your Post Title"}
                   </Typography>
@@ -365,25 +419,46 @@ export default function NewPost() {
                   <Stack spacing={2} sx={{ mb: 3 }}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Category sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.category ? "text.primary" : "text.secondary"}>
+                      <Typography
+                        variant="body2"
+                        color={
+                          formData.category ? "text.primary" : "text.secondary"
+                        }
+                      >
                         {formData.category || "Category not specified"}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: formData.price ? "#4caf50" : "#bbb" }}>
-                        {formData.price ? `LKR ${Number(formData.price).toLocaleString("en-LK")}` : "Price not set"}
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          fontWeight: 600,
+                          color: formData.price ? "#4caf50" : "#bbb",
+                        }}
+                      >
+                        {formData.price
+                          ? `LKR ${Number(formData.price).toLocaleString("en-LK")}`
+                          : "Price not set"}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccessTime sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.deliveryTime ? "text.primary" : "text.secondary"}>
+                      <Typography
+                        variant="body2"
+                        color={
+                          formData.deliveryTime ? "text.primary" : "text.secondary"
+                        }
+                      >
                         {formData.deliveryTime || "Delivery time not specified"}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Phone sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.contact ? "text.primary" : "text.secondary"}>
+                      <Typography
+                        variant="body2"
+                        color={formData.contact ? "text.primary" : "text.secondary"}
+                      >
                         {formData.contact || "Contact not provided"}
                       </Typography>
                     </Box>
@@ -394,15 +469,25 @@ export default function NewPost() {
                   <Typography
                     variant="body2"
                     color={formData.description ? "text.primary" : "text.secondary"}
-                    sx={{ mb: 2, lineHeight: 1.7, whiteSpace: "pre-wrap", opacity: descOpacity }}
+                    sx={{
+                      mb: 2,
+                      lineHeight: 1.7,
+                      whiteSpace: "pre-wrap",
+                      opacity: descOpacity,
+                    }}
                   >
-                    {limitWords(formData.description, maxWords) || "Description will appear here..."}
+                    {limitWords(formData.description, maxWords) ||
+                      "Description will appear here..."}
                   </Typography>
 
                   {specializationsArray.length > 0 && (
                     <>
                       <Divider sx={{ my: 2 }} />
-                      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
+                      <Typography
+                        variant="subtitle2"
+                        gutterBottom
+                        sx={{ fontWeight: 600, color: "#1a237e" }}
+                      >
                         Specializations
                       </Typography>
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
@@ -411,7 +496,11 @@ export default function NewPost() {
                             key={index}
                             label={spec}
                             size="small"
-                            sx={{ bgcolor: "#e3f2fd", color: "#1565c0", fontWeight: 500 }}
+                            sx={{
+                              bgcolor: "#e3f2fd",
+                              color: "#1565c0",
+                              fontWeight: 500,
+                            }}
                           />
                         ))}
                       </Box>
