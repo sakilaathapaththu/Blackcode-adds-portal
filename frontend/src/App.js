@@ -11,6 +11,7 @@ import Dashboard from "./Pages/Dashboard";
 import Profile from "./Pages/Profile";
 import HomepageNavbar from "./Components/NavBar/Homepagenavbar";
 import AuthPage from "./Pages/Auth/AuthPage";
+import Footer from "./Components/Home/Footer";
 
 const theme = createTheme({
   palette: { mode: "light", background: { default: "#F6F9FC" } },
@@ -41,7 +42,7 @@ export default function App() {
             </Routes>
           </Box>
           {/* If your Footer is a component, include it here */}
-          {/* <Footer /> */}
+          <Footer /> 
         </BrowserRouter>
       </AuthProvider>
     </ThemeProvider>
