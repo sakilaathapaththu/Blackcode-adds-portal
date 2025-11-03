@@ -34,6 +34,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // ✅ added
 import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 import { AuthContext } from '../../Context/AuthContext'; // ✅ added
 
+
 // Updated theme with cohesive matching color palette
 const theme = createTheme({
   palette: {
@@ -305,6 +306,11 @@ const HomepageNavbar = () => {
     setActiveTab(tabId);
   };
 
+  const handlePostAd = () => {
+  navigate('/posts/new');
+  setMobileOpen(false); // Closes drawer if open
+};
+
   // Mobile drawer content with enhanced animations
   const drawer = (
     <Box sx={{ width: 280, height: '100%', bgcolor: 'background.paper' }}>
@@ -329,7 +335,7 @@ const HomepageNavbar = () => {
             <ShoppingBagIcon sx={{ fontSize: 20 }} />
           </Avatar>
           <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-            BODIMA.lk
+            OUTSOURCE.COM
           </Typography>
         </Box>
         <IconButton onClick={handleDrawerToggle} sx={{ color: 'white' }}>
@@ -499,6 +505,7 @@ const HomepageNavbar = () => {
               fontSize: '0.9rem',
               fontWeight: 700,
             }}
+            onClick={handlePostAd}
           >
             POST YOUR AD
           </CTAButton>
@@ -639,6 +646,7 @@ const HomepageNavbar = () => {
                     px: 3,
                     py: 1,
                   }}
+                  onClick={handlePostAd}
                 >
                   POST YOUR AD
                 </CTAButton>
