@@ -288,8 +288,9 @@ export default function ItemsPage() {
                           mb: 2,
                         }}
                       >
-                        {truncateWords(item.description, 20)}{" "}
-                        {String(item.description || "").split(/\s+/).length > 20 && (
+                      
+                        {truncateWords(item.description, 10)}{" "}
+                        {String(item.description || "").split(/\s+/).length > 10 && (
                           <Button
                             size="small"
                             sx={{ textTransform: "none", p: 0, minWidth: "auto" }}

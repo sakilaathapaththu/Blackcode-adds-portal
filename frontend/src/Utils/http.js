@@ -28,7 +28,7 @@ import axios from "axios";
 
 // 🔧 HARD-CODE your backend origin here:
 const API_ROOT = "http://72.60.42.120:5501"; 
-
+// const API_ROOT = "http://localhost:5501"; 
 const http = axios.create({
   baseURL: `${API_ROOT.replace(/\/+$/, "")}/api`, // -> http://localhost:5000/api
   headers: { "Content-Type": "application/json" },
