@@ -16,6 +16,7 @@ import {
   Chip,
   Paper,
   LinearProgress,
+  MenuItem,
 } from "@mui/material";
 import {
   AccessTime,
@@ -24,9 +25,20 @@ import {
   Phone,
   Image as ImageIcon,
 } from "@mui/icons-material";
-import axios from "axios";
+import http from "../../Utils/http";
 
-const API_URL = "http://localhost:5000/api/posts";
+// Dropdown options
+const CATEGORY_OPTIONS = [
+  "All Categories",
+  "Web Development",
+  "Design",
+  "Marketing",
+  "AI & ML",
+  "Consulting",
+  "Content Writing",
+  "Education",
+  "Others",
+];
 
 export default function NewPost() {
   const { token } = useContext(AuthContext);
@@ -60,24 +72,29 @@ export default function NewPost() {
   const validate = (data = formData) => {
     let temp = {};
     if (touched.title) temp.title = data.title.trim() ? "" : "Title is required.";
+
     if (touched.category)
       temp.category = data.category.trim() ? "" : "Category is required.";
+
     if (touched.price) {
       if (!data.price.trim()) temp.price = "Price is required.";
       else if (isNaN(Number(data.price)) || Number(data.price) <= 0)
         temp.price = "Enter a valid price.";
       else temp.price = "";
     }
+
     if (touched.deliveryTime)
       temp.deliveryTime = data.deliveryTime.trim()
         ? ""
         : "Delivery time is required.";
+
     if (touched.contact) {
       if (!data.contact.trim()) temp.contact = "Contact is required.";
       else if (!/^\d{10}$/.test(data.contact.trim()))
         temp.contact = "Phone number must be exactly 10 digits.";
       else temp.contact = "";
     }
+
     if (touched.description)
       temp.description =
         countWords(data.description) <= maxWords
@@ -89,35 +106,39 @@ export default function NewPost() {
 
   const handleBlur = (e) => {
     const { name } = e.target;
-    setTouched({ ...touched, [name]: true });
+    setTouched((t) => ({ ...t, [name]: true }));
     setErrors(validate({ ...formData, [name]: formData[name] }));
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
 
+    // Live word limit tracking for description
     if (name === "description") {
       const words = countWords(value);
       setWordCount(words);
-      if (words <= maxWords) setFormData({ ...formData, [name]: value });
+      if (words <= maxWords) setFormData((s) => ({ ...s, [name]: value }));
       return;
     }
 
+    // Numeric only for contact & price (keep empty allowed)
     if (name === "contact" || name === "price") {
-      if (!/^\d*$/.test(value)) return; // only numbers
-      if (name === "contact" && value.length > 10) return; // max 10 digits for phone
+      if (!/^\d*$/.test(value)) return;
+      if (name === "contact" && value.length > 10) return;
     }
 
-    setFormData({ ...formData, [name]: value });
+    setFormData((s) => ({ ...s, [name]: value }));
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setImage(file);
+    const file = e.target.files?.[0];
+    setImage(file || null);
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
       reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
     }
   };
 
@@ -136,23 +157,28 @@ export default function NewPost() {
 
     try {
       setLoading(true);
+
       const data = new FormData();
       Object.keys(formData).forEach((key) => data.append(key, formData[key]));
       if (image) data.append("image", image);
       if (formData.specializations.trim() !== "") {
-        const arr = formData.specializations.split(",").map((s) => s.trim());
+        const arr = formData.specializations.split(",").map((s) => s.trim()).filter(Boolean);
         data.set("specializations", JSON.stringify(arr));
       }
 
-      await axios.post(API_URL, data, {
+      // Use shared http client; let browser set multipart boundary
+      await http.post("/posts", data, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          // override instance default JSON content-type for this request
           "Content-Type": "multipart/form-data",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
+
       navigate("/profile");
     } catch (err) {
-   
+      // surface a friendly message (http interceptor already normalizes message)
+      setErrors((e) => ({ ...e, submit: err?.message || "Failed to create post." }));
     } finally {
       setLoading(false);
     }
@@ -177,17 +203,15 @@ export default function NewPost() {
       : 1;
 
   const isFormInvalid =
-    isLimitReached || loading || Object.values(errors).some((v) => v !== "");
+    isLimitReached ||
+    loading ||
+    Object.values(errors).some((v) => v !== "");
 
   return (
     <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
       <Container maxWidth="lg">
         <Box sx={{ mb: 4, textAlign: "left" }}>
-          <Typography
-            variant="h3"
-            gutterBottom
-            sx={{ fontWeight: 700, color: "#1a237e" }}
-          >
+          <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
             Create New Post
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
@@ -212,38 +236,78 @@ export default function NewPost() {
             >
               <Box component="form" onSubmit={handleSubmit} noValidate>
                 <Stack spacing={3}>
-                  <Typography
-                    variant="h5"
-                    gutterBottom
-                    sx={{ fontWeight: 600, color: "#1a237e" }}
-                  >
+                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
                     Post Details
                   </Typography>
 
-                  {[ 
-                    { label: "Title", name: "title" },
-                    { label: "Category", name: "category" },
-                    { label: "Price (LKR)", name: "price" },
-                    { label: "Delivery Time", name: "deliveryTime" },
-                    { label: "Contact", name: "contact" },
-                  ].map((field) => (
-                    <TextField
-                      key={field.name}
-                      {...field}
-                      value={formData[field.name]}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      fullWidth
-                      error={touched[field.name] && !!errors[field.name]}
-                      helperText={touched[field.name] ? errors[field.name] : ""}
-                      InputProps={{
-                        style: {
-                          opacity: touched[field.name] && errors[field.name] ? 0.5 : 1,
-                          inputMode: field.name === "price" || field.name === "contact" ? "numeric" : "text",
-                        },
-                      }}
-                    />
-                  ))}
+                  {/* Title */}
+                  <TextField
+                    label="Title"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    fullWidth
+                    error={touched.title && !!errors.title}
+                    helperText={touched.title ? errors.title : ""}
+                  />
+
+                  {/* Category (Dropdown) */}
+                  <TextField
+                    label="Category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    fullWidth
+                    select
+                    error={touched.category && !!errors.category}
+                    helperText={touched.category ? errors.category : ""}
+                  >
+                    {CATEGORY_OPTIONS.map((opt) => (
+                      <MenuItem key={opt} value={opt}>
+                        {opt}
+                      </MenuItem>
+                    ))}
+                  </TextField>
+
+                  {/* Price */}
+                  <TextField
+                    label="Price (LKR)"
+                    name="price"
+                    value={formData.price}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    fullWidth
+                    error={touched.price && !!errors.price}
+                    helperText={touched.price ? errors.price : ""}
+                    inputProps={{ inputMode: "numeric" }}
+                  />
+
+                  {/* Delivery Time */}
+                  <TextField
+                    label="Delivery Time"
+                    name="deliveryTime"
+                    value={formData.deliveryTime}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    fullWidth
+                    error={touched.deliveryTime && !!errors.deliveryTime}
+                    helperText={touched.deliveryTime ? errors.deliveryTime : ""}
+                  />
+
+                  {/* Contact */}
+                  <TextField
+                    label="Contact"
+                    name="contact"
+                    value={formData.contact}
+                    onChange={handleChange}
+                    onBlur={handleBlur}
+                    fullWidth
+                    error={touched.contact && !!errors.contact}
+                    helperText={touched.contact ? errors.contact : ""}
+                    inputProps={{ inputMode: "numeric", maxLength: 10 }}
+                  />
 
                   {/* Description */}
                   <Box>
@@ -289,6 +353,7 @@ export default function NewPost() {
                     />
                   </Box>
 
+                  {/* Specializations */}
                   <TextField
                     label="Specializations (comma separated)"
                     name="specializations"
@@ -299,26 +364,21 @@ export default function NewPost() {
                     helperText="Separate each specialization with a comma"
                   />
 
-                  <Button
-                    variant="outlined"
-                    component="label"
-                    startIcon={<ImageIcon />}
-                  >
+                  {/* Image Upload */}
+                  <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
                     {image ? "Change Image" : "Upload Image"}
-                    <input
-                      type="file"
-                      hidden
-                      accept="image/*"
-                      onChange={handleFileChange}
-                    />
+                    <input type="file" hidden accept="image/*" onChange={handleFileChange} />
                   </Button>
                   {image && (
-                    <Typography
-                      variant="caption"
-                      color="success.main"
-                      sx={{ mt: 1, display: "block" }}
-                    >
+                    <Typography variant="caption" color="success.main" sx={{ mt: 1, display: "block" }}>
                       ✓ {image.name}
+                    </Typography>
+                  )}
+
+                  {/* Submit */}
+                  {errors.submit && (
+                    <Typography variant="body2" color="error" sx={{ mt: -1 }}>
+                      {errors.submit}
                     </Typography>
                   )}
 
@@ -330,12 +390,31 @@ export default function NewPost() {
                     <Button
                       variant="contained"
                       type="submit"
-                      disabled={isFormInvalid}
+                      disabled={
+                        isLimitReached ||
+                        loading ||
+                        Object.values(errors).some((v) => v !== "")
+                      }
                       sx={{
-                        bgcolor: isFormInvalid ? "grey.400" : "#1a237e",
-                        opacity: isFormInvalid ? 0.6 : 1,
+                        bgcolor:
+                          isLimitReached ||
+                          loading ||
+                          Object.values(errors).some((v) => v !== "")
+                            ? "grey.400"
+                            : "#1a237e",
+                        opacity:
+                          isLimitReached ||
+                          loading ||
+                          Object.values(errors).some((v) => v !== "")
+                            ? 0.6
+                            : 1,
                         "&:hover": {
-                          bgcolor: isFormInvalid ? "grey.500" : "#0d47a1",
+                          bgcolor:
+                            isLimitReached ||
+                            loading ||
+                            Object.values(errors).some((v) => v !== "")
+                              ? "grey.500"
+                              : "#0d47a1",
                         },
                       }}
                     >
@@ -359,11 +438,7 @@ export default function NewPost() {
                 top: { md: 20, xs: 0 },
               }}
             >
-              <Typography
-                variant="h5"
-                gutterBottom
-                sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}
-              >
+              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
                 Live Preview
               </Typography>
 
@@ -377,13 +452,7 @@ export default function NewPost() {
                 }}
               >
                 {imagePreview ? (
-                  <CardMedia
-                    component="img"
-                    height="280"
-                    image={imagePreview}
-                    alt="Preview"
-                    sx={{ objectFit: "cover" }}
-                  />
+                  <CardMedia component="img" height="280" image={imagePreview} alt="Preview" sx={{ objectFit: "cover" }} />
                 ) : (
                   <Box
                     sx={{
@@ -406,11 +475,7 @@ export default function NewPost() {
                   <Typography
                     variant="h5"
                     gutterBottom
-                    sx={{
-                      fontWeight: 700,
-                      color: formData.title ? "#1a237e" : "#bbb",
-                      mb: 2,
-                    }}
+                    sx={{ fontWeight: 700, color: formData.title ? "#1a237e" : "#bbb", mb: 2 }}
                   >
                     {formData.title || "Your Post Title"}
                   </Typography>
@@ -420,38 +485,34 @@ export default function NewPost() {
                       <Category sx={{ color: "#666", fontSize: 20 }} />
                       <Typography
                         variant="body2"
-                        color={
-                          formData.category ? "text.primary" : "text.secondary"
-                        }
+                        color={formData.category ? "text.primary" : "text.secondary"}
                       >
                         {formData.category || "Category not specified"}
                       </Typography>
                     </Box>
+
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
                       <Typography
                         variant="body1"
-                        sx={{
-                          fontWeight: 600,
-                          color: formData.price ? "#4caf50" : "#bbb",
-                        }}
+                        sx={{ fontWeight: 600, color: formData.price ? "#4caf50" : "#bbb" }}
                       >
                         {formData.price
                           ? `LKR ${Number(formData.price).toLocaleString("en-LK")}`
                           : "Price not set"}
                       </Typography>
                     </Box>
+
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <AccessTime sx={{ color: "#666", fontSize: 20 }} />
                       <Typography
                         variant="body2"
-                        color={
-                          formData.deliveryTime ? "text.primary" : "text.secondary"
-                        }
+                        color={formData.deliveryTime ? "text.primary" : "text.secondary"}
                       >
                         {formData.deliveryTime || "Delivery time not specified"}
                       </Typography>
                     </Box>
+
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <Phone sx={{ color: "#666", fontSize: 20 }} />
                       <Typography
@@ -468,25 +529,15 @@ export default function NewPost() {
                   <Typography
                     variant="body2"
                     color={formData.description ? "text.primary" : "text.secondary"}
-                    sx={{
-                      mb: 2,
-                      lineHeight: 1.7,
-                      whiteSpace: "pre-wrap",
-                      opacity: descOpacity,
-                    }}
+                    sx={{ mb: 2, lineHeight: 1.7, whiteSpace: "pre-wrap", opacity: descOpacity }}
                   >
-                    {limitWords(formData.description, maxWords) ||
-                      "Description will appear here..."}
+                    {limitWords(formData.description, maxWords) || "Description will appear here..."}
                   </Typography>
 
                   {specializationsArray.length > 0 && (
                     <>
                       <Divider sx={{ my: 2 }} />
-                      <Typography
-                        variant="subtitle2"
-                        gutterBottom
-                        sx={{ fontWeight: 600, color: "#1a237e" }}
-                      >
+                      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
                         Specializations
                       </Typography>
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
@@ -495,11 +546,7 @@ export default function NewPost() {
                             key={index}
                             label={spec}
                             size="small"
-                            sx={{
-                              bgcolor: "#e3f2fd",
-                              color: "#1565c0",
-                              fontWeight: 500,
-                            }}
+                            sx={{ bgcolor: "#e3f2fd", color: "#1565c0", fontWeight: 500 }}
                           />
                         ))}
                       </Box>

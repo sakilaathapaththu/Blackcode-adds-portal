@@ -102,6 +102,7 @@ export default function Sortingpanel({
     "Consulting",
     "Content Writing",
     "Education",
+    "Others",
   ];
 
   // Desktop View - Original code unchanged

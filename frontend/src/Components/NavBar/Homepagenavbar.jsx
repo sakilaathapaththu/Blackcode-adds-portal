@@ -1,25 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import {
-  AppBar,
-  Toolbar,
-  Typography,
-  Button,
-  Menu,
-  MenuItem,
-  IconButton,
-  Drawer,
-  List,
-  ListItem,
-  ListItemText,
-  useTheme,
-  useMediaQuery,
-  Box,
-  Fade,
-  Avatar,
-  Divider,
-  ListItemIcon,
-} from '@mui/material';
+  AppBar, Toolbar, Typography, Button, Menu, MenuItem, IconButton, Drawer,
+  List, ListItemText, useTheme, useMediaQuery, Box, Fade, Avatar, Divider,
+  ListItemIcon, Dialog, DialogTitle, DialogContent, DialogActions, Snackbar,
+  Alert, ListItemButton
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   ExpandMore as ExpandMoreIcon,
@@ -29,482 +15,358 @@ import {
   Close as CloseIcon,
   ShoppingBag as ShoppingBagIcon,
   Login as LoginIcon,
-} from '@mui/icons-material';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // ✅ added
-import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
-import { AuthContext } from '../../Context/AuthContext'; // ✅ added
+} from "@mui/icons-material";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { ThemeProvider, createTheme, styled } from "@mui/material/styles";
+import { AuthContext } from "../../Context/AuthContext";
 
-
-// Updated theme with cohesive matching color palette
+// Theme
 const theme = createTheme({
   palette: {
-    primary: {
-      main: '#007BFF', // Matching your sidebar blue
-      light: '#42A5F5',
-      dark: '#0056b3',
-    },
-    secondary: {
-      main: '#00C853', // Matching your sidebar green
-      light: '#34D399',
-      dark: '#059669',
-    },
-    background: {
-      default: '#F6F9FC', // Matching your layout background
-      paper: '#FFFFFF',
-    },
-    text: {
-      primary: '#212121',
-      secondary: '#555555',
-    },
+    primary: { main: "#007BFF", light: "#42A5F5", dark: "#0056b3" },
+    secondary: { main: "#00C853", light: "#34D399", dark: "#059669" },
+    background: { default: "#F6F9FC", paper: "#FFFFFF" },
+    text: { primary: "#212121", secondary: "#555555" },
   },
   typography: {
-    fontFamily: '"Inter", "SF Pro Display", "Segoe UI", "Roboto", sans-serif',
-    h6: {
-      fontWeight: 700,
-      letterSpacing: '-0.02em',
-    },
-    button: {
-      fontFamily: '"Inter", "SF Pro Display", sans-serif',
-      fontWeight: 600,
-      textTransform: 'none',
-      letterSpacing: '-0.01em',
-    },
+    fontFamily: '"Inter","SF Pro Display","Segoe UI","Roboto",sans-serif',
+    h6: { fontWeight: 700, letterSpacing: "-0.02em" },
+    button: { fontWeight: 600, textTransform: "none", letterSpacing: "-0.01em" },
   },
   components: {
     MuiAppBar: {
       styleOverrides: {
-        root: {
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-          backdropFilter: 'blur(20px)',
-        },
+        root: { boxShadow: "0 2px 8px rgba(0,0,0,0.1)", backdropFilter: "blur(20px)" },
       },
     },
   },
 });
 
-// Styled component for animated nav buttons with underline effect
+// Styleds
 const AnimatedNavButton = styled(Button)(({ theme }) => ({
-  position: 'relative',
-  padding: '8px 16px',
-  borderRadius: '8px',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  overflow: 'hidden',
-  
-  '&::before': {
+  position: "relative",
+  padding: "8px 16px",
+  borderRadius: "8px",
+  transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+  overflow: "hidden",
+  "&::before": {
     content: '""',
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
-    left: '50%',
+    left: "50%",
     width: 0,
-    height: '3px',
+    height: "3px",
     background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-    transform: 'translateX(-50%)',
-    borderRadius: '2px 2px 0 0',
+    transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
+    transform: "translateX(-50%)",
+    borderRadius: "2px 2px 0 0",
   },
-  
-  '&:hover': {
-    backgroundColor: 'rgba(0, 123, 255, 0.04)',
-    transform: 'translateY(-1px)',
-    
-    '&::before': {
-      width: '80%',
-    },
-    
-    '& .nav-icon': {
-      transform: 'rotate(5deg) scale(1.1)',
-      color: theme.palette.primary.main,
-    },
+  "&:hover": {
+    backgroundColor: "rgba(0,123,255,0.04)",
+    transform: "translateY(-1px)",
+    "&::before": { width: "80%" },
+    "& .nav-icon": { transform: "rotate(5deg) scale(1.1)", color: theme.palette.primary.main },
   },
-  
-  '& .nav-icon': {
-    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-    marginRight: '8px',
-    fontSize: '20px',
-  },
+  "& .nav-icon": { transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)", marginRight: 8, fontSize: 20 },
 }));
 
-// Styled component for the logo with gradient animation
 const AnimatedLogo = styled(Box)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  cursor: 'pointer',
-  transition: 'all 0.3s ease',
-  
-  '&:hover': {
-    transform: 'scale(1.05)',
-    
-    '& .logo-icon': {
-      transform: 'rotate(360deg)',
+  display: "flex",
+  alignItems: "center",
+  cursor: "pointer",
+  transition: "all 0.3s ease",
+  "&:hover": {
+    transform: "scale(1.05)",
+    "& .logo-icon": {
+      transform: "rotate(360deg)",
       background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
     },
   },
-  
-  '& .logo-icon': {
-    transition: 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+  "& .logo-icon": {
+    transition: "all 0.6s cubic-bezier(0.4,0,0.2,1)",
     background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
   },
 }));
 
-// Styled component for the POST AD button with matching colors
 const CTAButton = styled(Button)(({ theme }) => ({
   background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
-  borderRadius: '12px',
-  padding: '10px 20px',
-  position: 'relative',
-  overflow: 'hidden',
-  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-  color: 'white',
-  
-  '&::before': {
+  borderRadius: 12,
+  padding: "10px 20px",
+  position: "relative",
+  overflow: "hidden",
+  transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+  color: "white",
+  "&::before": {
     content: '""',
-    position: 'absolute',
+    position: "absolute",
     top: 0,
-    left: '-100%',
-    width: '100%',
-    height: '100%',
-    background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
-    transition: 'left 0.6s',
+    left: "-100%",
+    width: "100%",
+    height: "100%",
+    background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)",
+    transition: "left 0.6s",
   },
-  
-  '&:hover': {
-    transform: 'translateY(-2px) scale(1.02)',
-    boxShadow: '0 8px 25px rgba(0, 123, 255, 0.3)',
+  "&:hover": {
+    transform: "translateY(-2px) scale(1.02)",
+    boxShadow: "0 8px 25px rgba(0,123,255,0.3)",
     background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.dark} 100%)`,
-    
-    '&::before': {
-      left: '100%',
-    },
+    "&::before": { left: "100%" },
   },
 }));
 
-// Styled component for the animated login button
 const LoginButton = styled(Button)(({ theme }) => ({
-  position: 'relative',
-  borderRadius: '8px',
-  padding: '8px 16px',
+  position: "relative",
+  borderRadius: 8,
+  padding: "8px 16px",
   border: `2px solid ${theme.palette.primary.main}`,
   color: theme.palette.primary.main,
-  backgroundColor: 'transparent',
-  overflow: 'hidden',
-  transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+  backgroundColor: "transparent",
+  overflow: "hidden",
+  transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
   fontWeight: 600,
-  marginRight: '8px',
-  
-  '&::before': {
+  marginRight: 8,
+  "&::before": {
     content: '""',
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     width: 0,
-    height: '100%',
+    height: "100%",
     background: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-    transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: "width 0.4s cubic-bezier(0.4,0,0.2,1)",
     zIndex: 0,
   },
-  
-  '& .login-content': {
-    position: 'relative',
-    zIndex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    transition: 'color 0.3s ease',
-  },
-  
-  '& .login-icon': {
-    marginRight: '8px',
-    transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-    fontSize: '18px',
-  },
-  
-  '&:hover': {
-    transform: 'translateY(-1px)',
-    boxShadow: `0 4px 15px rgba(0, 123, 255, 0.2)`,
+  "& .login-content": { position: "relative", zIndex: 1, display: "flex", alignItems: "center" },
+  "& .login-icon": { marginRight: 8, transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)", fontSize: 18 },
+  "&:hover": {
+    transform: "translateY(-1px)",
+    boxShadow: "0 4px 15px rgba(0,123,255,0.2)",
     border: `2px solid ${theme.palette.primary.main}`,
-    
-    '&::before': {
-      width: '100%',
-    },
-    
-    '& .login-content': {
-      color: 'white',
-    },
-    
-    '& .login-icon': {
-      transform: 'rotate(360deg) scale(1.1)',
-      color: 'white',
-    },
+    "&::before": { width: "100%" },
+    "& .login-content": { color: "white" },
+    "& .login-icon": { transform: "rotate(360deg) scale(1.1)", color: "white" },
   },
 }));
 
 const HomepageNavbar = () => {
   const navigate = useNavigate();
-  const { user, logout } = useContext(AuthContext); // ✅ auth state
+  const { user, logout } = useContext(AuthContext);
+
   const [languageAnchor, setLanguageAnchor] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState('all-ads');
+  const [activeTab, setActiveTab] = useState("all-ads");
   const muiTheme = useTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down('lg'));
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down("lg"));
 
-  // Handle scroll effect
+  const [loginDialogOpen, setLoginDialogOpen] = useState(false);
+  const [snackOpen, setSnackOpen] = useState(false);
+
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
-    };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const onScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleLanguageClick = (event) => {
-    setLanguageAnchor(event.currentTarget);
-  };
+  const handleLanguageClick = (e) => setLanguageAnchor(e.currentTarget);
+  const handleLanguageClose = () => setLanguageAnchor(null);
+  const handleDrawerToggle = () => setMobileOpen((s) => !s);
 
-  const handleLanguageClose = () => {
-    setLanguageAnchor(null);
-  };
-
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
-  };
-
-  // Updated login handler to navigate to Login page
+  // 👉 Send users to Registration page
   const handleLoginClick = () => {
-    navigate('/auth'); // Navigate to the login page
-    setMobileOpen(false); // Close mobile drawer if open
+    navigate("/auth?mode=register");
+    setMobileOpen(false);
   };
 
-  // ✅ added: logout + profile handlers
   const handleLogout = () => {
     logout();
     setMobileOpen(false);
-    navigate('/');
+    navigate("/");
   };
+
   const goProfile = () => {
     setMobileOpen(false);
-    navigate('/profile');
+    navigate("/profile");
   };
 
   const navigationItems = [
-    { id: 'all-ads', label: 'All Ads', icon: <HomeIcon className="nav-icon" />, href: '#all-ads' },
+    { id: "all-ads", label: "All Ads", icon: <HomeIcon className="nav-icon" /> },
   ];
 
   const languages = [
-    { code: 'en', label: 'English', flag: '🇺🇸' },
-    { code: 'si', label: 'සිංහල', flag: '🇱🇰' },
-    { code: 'ta', label: 'தமிழ்', flag: '🇱🇰' },
+    { code: "en", label: "English", flag: "🇺🇸" },
+    { code: "si", label: "සිංහල", flag: "🇱🇰" },
+    { code: "ta", label: "தமிழ்", flag: "🇱🇰" },
   ];
-
   const [selectedLanguage, setSelectedLanguage] = useState(languages[0]);
-
   const handleLanguageSelect = (language) => {
     setSelectedLanguage(language);
     handleLanguageClose();
   };
 
-  const handleTabClick = (tabId) => {
-    setActiveTab(tabId);
+  const handleTabClick = (tabId) => setActiveTab(tabId);
+
+  // 🔐 Gate posting; if not logged in → dialog + snack → Registration
+  const handlePostAd = () => {
+    if (!user) {
+      setLoginDialogOpen(true);
+      setSnackOpen(true);
+      setMobileOpen(false);
+      return;
+    }
+    navigate("/posts/new");
+    setMobileOpen(false);
   };
 
-  const handlePostAd = () => {
-  navigate('/posts/new');
-  setMobileOpen(false); // Closes drawer if open
-};
-
-  // Mobile drawer content with enhanced animations
+  // Drawer
   const drawer = (
-    <Box sx={{ width: 280, height: '100%', bgcolor: 'background.paper' }}>
-      <Box sx={{ 
-        p: 2, 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'space-between',
-        borderBottom: 1,
-        borderColor: 'divider',
-        background: 'linear-gradient(135deg, #007BFF 0%, #00C853 100%)',
-        color: 'white'
-      }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Avatar sx={{ 
-            bgcolor: 'rgba(255,255,255,0.2)', 
-            mr: 1.5,
-            width: 36,
-            height: 36,
-            backdropFilter: 'blur(10px)'
-          }}>
+    <Box sx={{ width: 280, height: "100%", bgcolor: "background.paper" }}>
+      <Box
+        sx={{
+          p: 2, display: "flex", alignItems: "center", justifyContent: "space-between",
+          borderBottom: 1, borderColor: "divider",
+          background: "linear-gradient(135deg, #007BFF 0%, #00C853 100%)", color: "white",
+        }}
+      >
+        <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Avatar sx={{ bgcolor: "rgba(255,255,255,0.2)", mr: 1.5, width: 36, height: 36, backdropFilter: "blur(10px)" }}>
             <ShoppingBagIcon sx={{ fontSize: 20 }} />
           </Avatar>
-          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
             OUTSOURCE.COM
           </Typography>
         </Box>
-        <IconButton onClick={handleDrawerToggle} sx={{ color: 'white' }}>
+        <IconButton onClick={handleDrawerToggle} sx={{ color: "white" }}>
           <CloseIcon />
         </IconButton>
       </Box>
-      
+
       <List sx={{ pt: 2, px: 2 }}>
-        {navigationItems.map((item, index) => (
-          <ListItem 
-            key={item.label}
-            button 
+        {navigationItems.map((item) => (
+          <ListItemButton
+            key={item.id}
             onClick={() => handleTabClick(item.id)}
-            sx={{ 
-              mb: 1, 
-              borderRadius: 2,
-              background: activeTab === item.id ? 'linear-gradient(135deg, #007BFF 0%, #00C853 100%)' : 'transparent',
-              color: activeTab === item.id ? 'white' : 'text.primary',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              '&:hover': {
-                background: activeTab === item.id 
-                  ? 'linear-gradient(135deg, #0056b3 0%, #059669 100%)' 
-                  : 'rgba(0, 123, 255, 0.06)',
-                transform: 'translateX(4px)',
-              },
-            }}
-          >
-            <ListItemIcon sx={{ 
-              color: activeTab === item.id ? 'white' : 'primary.main', 
-              minWidth: 40,
-              transition: 'all 0.3s ease'
-            }}>
-              {item.icon}
-            </ListItemIcon>
-            <ListItemText 
-              primary={item.label} 
-              primaryTypographyProps={{ 
-                fontWeight: 600,
-                fontSize: '0.9rem'
-              }}
-            />
-          </ListItem>
-        ))}
-        
-        <Divider sx={{ my: 2 }} />
-        
-        {/* ✅ Conditional login vs profile/logout in drawer */}
-        {!user ? (
-          <ListItem 
-            button 
-            onClick={handleLoginClick}
-            sx={{ 
+            sx={{
               mb: 1,
               borderRadius: 2,
-              border: '2px solid',
-              borderColor: 'primary.main',
-              '&:hover': { 
-                bgcolor: 'primary.main',
-                color: 'white',
-                transform: 'translateX(4px)',
-                '& .MuiListItemIcon-root': {
-                  color: 'white',
-                },
+              background:
+                activeTab === item.id
+                  ? "linear-gradient(135deg, #007BFF 0%, #00C853 100%)"
+                  : "transparent",
+              color: activeTab === item.id ? "white" : "text.primary",
+              transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+              "&:hover": {
+                background:
+                  activeTab === item.id
+                    ? "linear-gradient(135deg, #0056b3 0%, #059669 100%)"
+                    : "rgba(0,123,255,0.06)",
+                transform: "translateX(4px)",
               },
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
             }}
           >
-            <ListItemIcon sx={{ 
-              color: 'primary.main',
-              minWidth: 40,
-              transition: 'all 0.4s ease'
-            }}>
+            <ListItemIcon
+              sx={{
+                color: activeTab === item.id ? "white" : "primary.main",
+                minWidth: 40,
+                transition: "all 0.3s ease",
+              }}
+            >
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText primary={item.label} primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
+          </ListItemButton>
+        ))}
+
+        <Divider sx={{ my: 2 }} />
+
+        {!user ? (
+          <ListItemButton
+            onClick={handleLoginClick}
+            sx={{
+              mb: 1,
+              borderRadius: 2,
+              border: "2px solid",
+              borderColor: "primary.main",
+              "&:hover": {
+                bgcolor: "primary.main",
+                color: "white",
+                transform: "translateX(4px)",
+                "& .MuiListItemIcon-root": { color: "white" },
+              },
+              transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+            }}
+          >
+            <ListItemIcon sx={{ color: "primary.main", minWidth: 40, transition: "all 0.4s ease" }}>
               <LoginIcon />
             </ListItemIcon>
-            <ListItemText 
-              primary="Login"
-              primaryTypographyProps={{ 
-                fontWeight: 600,
-                fontSize: '0.9rem'
-              }}
-            />
-          </ListItem>
+            <ListItemText primary="Register" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
+          </ListItemButton>
         ) : (
           <>
-            <ListItem 
-              button 
+            <ListItemButton
               onClick={goProfile}
-              sx={{ 
+              sx={{
                 mb: 1,
                 borderRadius: 2,
-                '&:hover': { 
-                  bgcolor: 'action.hover',
-                  transform: 'translateX(4px)'
-                },
-                transition: 'all 0.3s ease'
+                "&:hover": { bgcolor: "action.hover", transform: "translateX(4px)" },
+                transition: "all 0.3s ease",
               }}
             >
-              <ListItemIcon sx={{ color: 'text.secondary', minWidth: 40 }}>
+              <ListItemIcon sx={{ color: "text.secondary", minWidth: 40 }}>
                 <AccountCircleIcon />
               </ListItemIcon>
-              <ListItemText 
-                primary="Profile"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-              />
-            </ListItem>
+              <ListItemText primary="Profile" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
+            </ListItemButton>
 
-            <ListItem 
-              button 
+            <ListItemButton
               onClick={handleLogout}
-              sx={{ 
+              sx={{
                 mb: 1,
                 borderRadius: 2,
-                border: '2px solid',
-                borderColor: 'error.main',
-                '&:hover': { 
-                  bgcolor: 'error.main',
-                  color: 'white',
-                  transform: 'translateX(4px)',
-                  '& .MuiListItemIcon-root': {
-                    color: 'white',
-                  },
+                border: "2px solid",
+                borderColor: "error.main",
+                "&:hover": {
+                  bgcolor: "error.main",
+                  color: "white",
+                  transform: "translateX(4px)",
+                  "& .MuiListItemIcon-root": { color: "white" },
                 },
-                transition: 'all 0.3s ease'
+                transition: "all 0.3s ease",
               }}
             >
-              <ListItemIcon sx={{ color: 'error.main', minWidth: 40 }}>
+              <ListItemIcon sx={{ color: "error.main", minWidth: 40 }}>
                 <CloseIcon />
               </ListItemIcon>
-              <ListItemText 
-                primary="Logout"
-                primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
-              />
-            </ListItem>
+              <ListItemText primary="Logout" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
+            </ListItemButton>
           </>
         )}
-        
-        <ListItem 
-          button 
+
+        <ListItemButton
           onClick={handleLanguageClick}
-          sx={{ 
+          sx={{
             borderRadius: 2,
-            '&:hover': { 
-              bgcolor: 'action.hover',
-              transform: 'translateX(4px)'
-            },
-            transition: 'all 0.3s ease'
+            "&:hover": { bgcolor: "action.hover", transform: "translateX(4px)" },
+            transition: "all 0.3s ease",
           }}
         >
-          <ListItemIcon sx={{ color: 'text.secondary', minWidth: 40 }}>
+          <ListItemIcon sx={{ color: "text.secondary", minWidth: 40 }}>
             <LanguageIcon />
           </ListItemIcon>
-          <ListItemText 
+          <ListItemText
             primary={`${selectedLanguage.flag} ${selectedLanguage.label}`}
-            primaryTypographyProps={{ fontWeight: 500, fontSize: '0.9rem' }}
+            primaryTypographyProps={{ fontWeight: 500, fontSize: "0.9rem" }}
           />
           <ExpandMoreIcon />
-        </ListItem>
-        
+        </ListItemButton>
+
         <Box sx={{ p: 1, mt: 2 }}>
           <CTAButton
             fullWidth
             variant="contained"
             size="medium"
             startIcon={<AddIcon />}
-            sx={{
-              py: 1.5,
-              fontSize: '0.9rem',
-              fontWeight: 700,
-            }}
+            sx={{ py: 1.5, fontSize: "0.9rem", fontWeight: 700 }}
             onClick={handlePostAd}
           >
             POST YOUR AD
@@ -516,65 +378,54 @@ const HomepageNavbar = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <AppBar 
-        position="fixed" 
+      <AppBar
+        position="fixed"
         elevation={scrolled ? 3 : 1}
         sx={{
-          bgcolor: scrolled ? 'rgba(255,255,255,0.95)' : 'background.paper',
-          color: 'text.primary',
-          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-          borderBottom: scrolled ? 'none' : '1px solid rgba(0,0,0,0.08)',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
-          zIndex: 1200, // Ensure it's above sidebar
+          bgcolor: scrolled ? "rgba(255,255,255,0.95)" : "background.paper",
+          color: "text.primary",
+          transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+          borderBottom: scrolled ? "none" : "1px solid rgba(0,0,0,0.08)",
+          backdropFilter: scrolled ? "blur(20px)" : "none",
+          zIndex: 1200,
         }}
       >
-        <Toolbar sx={{ px: { xs: 2, lg: 4 }, py: 0.5, minHeight: '64px' }}>
+        <Toolbar sx={{ px: { xs: 2, lg: 4 }, py: 0.5, minHeight: "64px" }}>
           {/* Logo */}
-          <AnimatedLogo sx={{ mr: 4 }} onClick={() => navigate('/')}>
-            <Avatar
-              className="logo-icon"
-              sx={{
-                width: 40,
-                height: 40,
-                mr: 1.5,
-                boxShadow: '0 2px 8px rgba(0, 123, 255, 0.3)',
-              }}
-            >
-              <ShoppingBagIcon sx={{ fontSize: 22, color: 'white' }} />
+          <AnimatedLogo sx={{ mr: 4 }} onClick={() => navigate("/")}>
+            <Avatar className="logo-icon" sx={{ width: 40, height: 40, mr: 1.5, boxShadow: "0 2px 8px rgba(0,123,255,0.3)" }}>
+              <ShoppingBagIcon sx={{ fontSize: 22, color: "white" }} />
             </Avatar>
-            <Typography 
-              variant="h6" 
-              component="div" 
-              sx={{ 
-                fontWeight: 800, 
-                fontSize: '1.5rem',
-                background: 'linear-gradient(135deg, #007BFF 0%, #00C853 100%)',
-                backgroundClip: 'text',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                letterSpacing: '-0.02em'
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: 800,
+                fontSize: "1.5rem",
+                background: "linear-gradient(135deg, #007BFF 0%, #00C853 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                letterSpacing: "-0.02em",
               }}
             >
               OUTSOURCE
             </Typography>
           </AnimatedLogo>
 
-          {/* Desktop Navigation */}
+          {/* Desktop nav */}
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
-              <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", flexGrow: 1 }}>
+              <Box sx={{ display: "flex", gap: 1 }}>
                 {navigationItems.map((item) => (
                   <AnimatedNavButton
-                    key={item.label}
+                    key={item.id}
                     onClick={() => handleTabClick(item.id)}
-                    startIcon={React.cloneElement(item.icon, { className: 'nav-icon' })}
+                    startIcon={React.cloneElement(item.icon, { className: "nav-icon" })}
                     sx={{
-                      color: activeTab === item.id ? 'primary.main' : 'text.primary',
+                      color: activeTab === item.id ? "primary.main" : "text.primary",
                       fontWeight: activeTab === item.id ? 700 : 500,
-                      
-                      '&::before': {
-                        width: activeTab === item.id ? '80%' : 0,
-                      }
+                      "&::before": { width: activeTab === item.id ? "80%" : 0 },
                     }}
                   >
                     {item.label}
@@ -584,68 +435,48 @@ const HomepageNavbar = () => {
 
               <Box sx={{ flexGrow: 1 }} />
 
-              {/* Right side buttons container */}
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                {/* Language Selector */}
+              {/* Right actions */}
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Button
                   color="inherit"
                   onClick={handleLanguageClick}
                   endIcon={<ExpandMoreIcon />}
                   startIcon={<LanguageIcon />}
                   sx={{
-                    color: 'text.primary',
+                    color: "text.primary",
                     fontWeight: 500,
                     px: 2,
                     py: 1,
                     borderRadius: 2,
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                      transform: 'translateY(-1px)',
-                    },
+                    transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+                    "&:hover": { bgcolor: "action.hover", transform: "translateY(-1px)" },
                   }}
                 >
                   {selectedLanguage.flag} {selectedLanguage.label}
                 </Button>
 
-                {/* ✅ Conditional Login vs Profile/Logout on desktop */}
                 {!user ? (
                   <LoginButton onClick={handleLoginClick}>
                     <Box className="login-content">
                       <LoginIcon className="login-icon" />
-                      Login
+                      Register
                     </Box>
                   </LoginButton>
                 ) : (
                   <>
-                    <Button
-                      onClick={goProfile}
-                      startIcon={<AccountCircleIcon />}
-                      sx={{ fontWeight: 600, mr: 1 }}
-                    >
-                      {user?.name || 'Profile'}
+                    <Button onClick={goProfile} startIcon={<AccountCircleIcon />} sx={{ fontWeight: 600, mr: 1 }}>
+                      {user?.name || "Profile"}
                     </Button>
-                    <Button
-                      onClick={handleLogout}
-                      color="error"
-                      variant="outlined"
-                      sx={{ fontWeight: 700, borderWidth: 2 }}
-                    >
+                    <Button onClick={handleLogout} color="error" variant="outlined" sx={{ fontWeight: 700, borderWidth: 2 }}>
                       Logout
                     </Button>
                   </>
                 )}
 
-                {/* POST YOUR AD Button */}
                 <CTAButton
                   variant="contained"
                   startIcon={<AddIcon />}
-                  sx={{
-                    fontSize: '0.9rem',
-                    fontWeight: 700,
-                    px: 3,
-                    py: 1,
-                  }}
+                  sx={{ fontSize: "0.9rem", fontWeight: 700, px: 3, py: 1 }}
                   onClick={handlePostAd}
                 >
                   POST YOUR AD
@@ -654,7 +485,7 @@ const HomepageNavbar = () => {
             </Box>
           )}
 
-          {/* Mobile Menu Button */}
+          {/* Mobile menu */}
           {isMobile && (
             <>
               <Box sx={{ flexGrow: 1 }} />
@@ -663,15 +494,11 @@ const HomepageNavbar = () => {
                 edge="start"
                 onClick={handleDrawerToggle}
                 sx={{
-                  color: 'text.primary',
+                  color: "text.primary",
                   borderRadius: 2,
                   p: 1.5,
-                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                  '&:hover': {
-                    bgcolor: 'primary.main',
-                    color: 'white',
-                    transform: 'rotate(90deg)',
-                  },
+                  transition: "all 0.3s cubic-bezier(0.4,0,0.2,1)",
+                  "&:hover": { bgcolor: "primary.main", color: "white", transform: "rotate(90deg)" },
                 }}
               >
                 <MenuIcon />
@@ -682,30 +509,30 @@ const HomepageNavbar = () => {
       </AppBar>
 
       {/* Language Menu */}
-      <Menu
+      {/* <Menu
         anchorEl={languageAnchor}
         open={Boolean(languageAnchor)}
         onClose={handleLanguageClose}
         TransitionComponent={Fade}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        transformOrigin={{ horizontal: "right", vertical: "top" }}
+        anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
         PaperProps={{
           sx: {
             mt: 1,
             borderRadius: 2,
-            boxShadow: '0 8px 25px rgba(0, 0, 0, 0.1)',
+            boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
             minWidth: 180,
-            overflow: 'visible',
-            '&::before': {
+            overflow: "visible",
+            "&::before": {
               content: '""',
-              display: 'block',
-              position: 'absolute',
+              display: "block",
+              position: "absolute",
               top: 0,
               right: 14,
               width: 10,
               height: 10,
-              bgcolor: 'background.paper',
-              transform: 'translateY(-50%) rotate(45deg)',
+              bgcolor: "background.paper",
+              transform: "translateY(-50%) rotate(45deg)",
               zIndex: 0,
             },
           },
@@ -722,42 +549,59 @@ const HomepageNavbar = () => {
               mx: 0.5,
               my: 0.25,
               borderRadius: 1,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                bgcolor: 'primary.main',
-                color: 'white',
-                transform: 'translateX(4px)',
-              },
-              '&.Mui-selected': {
-                bgcolor: 'primary.light',
-                color: 'primary.contrastText',
-                '&:hover': {
-                  bgcolor: 'primary.main',
-                },
+              transition: "all 0.2s ease",
+              "&:hover": { bgcolor: "primary.main", color: "white", transform: "translateX(4px)" },
+              "&.Mui-selected": {
+                bgcolor: "primary.light",
+                color: "primary.contrastText",
+                "&:hover": { bgcolor: "primary.main" },
               },
             }}
           >
-            <Typography sx={{ mr: 1.5, fontSize: '1rem' }}>{language.flag}</Typography>
-            <Typography sx={{ fontWeight: 500, fontSize: '0.9rem' }}>{language.label}</Typography>
+            <Typography sx={{ mr: 1.5, fontSize: "1rem" }}>{language.flag}</Typography>
+            <Typography sx={{ fontWeight: 500, fontSize: "0.9rem" }}>{language.label}</Typography>
           </MenuItem>
         ))}
-      </Menu>
+      </Menu> */}
 
-      {/* Mobile Drawer */}
+      {/* Drawer */}
       <Drawer
         variant="temporary"
         anchor="right"
         open={mobileOpen}
         onClose={handleDrawerToggle}
         ModalProps={{ keepMounted: true }}
-        PaperProps={{
-          sx: {
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-          },
-        }}
+        PaperProps={{ sx: { boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)" } }}
       >
         {drawer}
       </Drawer>
+
+      {/* Login/Account required dialog */}
+      <Dialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)}>
+        <DialogTitle>Account required</DialogTitle>
+        <DialogContent>
+          Please create an account or log in to post an ad.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLoginDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setLoginDialogOpen(false);
+              navigate("/auth?mode=register");
+            }}
+          >
+            Go to Register
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Optional snackbar hint */}
+      <Snackbar open={snackOpen} autoHideDuration={2000} onClose={() => setSnackOpen(false)}>
+        <Alert severity="info" onClose={() => setSnackOpen(false)}>
+          Please register or log in to continue.
+        </Alert>
+      </Snackbar>
     </ThemeProvider>
   );
 };
