@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { protect, adminOnly } from "../middleware/auth.js";
 import User from "../models/User.js";
+import { deleteUserAndContent } from "../controllers/adminController.js";
 
 const router = Router();
 
@@ -22,5 +23,8 @@ router.patch("/users/:id/role", protect, adminOnly, async (req, res) => {
   if (!user) return res.status(404).json({ message: "User not found" });
   res.json({ message: "Role updated", user });
 });
+
+// ✅ NEW: delete user + cascade delete posts & images
+router.delete("/users/:id", protect, adminOnly, deleteUserAndContent);
 
 export default router;

@@ -172,9 +172,9 @@ const HomepageNavbar = () => {
   const handleLanguageClose = () => setLanguageAnchor(null);
   const handleDrawerToggle = () => setMobileOpen((s) => !s);
 
-  // 👉 Send users to Registration page
+  // 👉 NOW sends users to LOGIN page
   const handleLoginClick = () => {
-    navigate("/auth?mode=register");
+    navigate("/auth?mode=login");
     setMobileOpen(false);
   };
 
@@ -204,9 +204,16 @@ const HomepageNavbar = () => {
     handleLanguageClose();
   };
 
-  const handleTabClick = (tabId) => setActiveTab(tabId);
+  // ✅ All Ads now navigates to home
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    if (tabId === "all-ads") {
+      navigate("/");
+      setMobileOpen(false);
+    }
+  };
 
-  // 🔐 Gate posting; if not logged in → dialog + snack → Registration
+  // 🔐 Gate posting; if not logged in → dialog + snack → Login
   const handlePostAd = () => {
     if (!user) {
       setLoginDialogOpen(true);
@@ -299,7 +306,7 @@ const HomepageNavbar = () => {
             <ListItemIcon sx={{ color: "primary.main", minWidth: 40, transition: "all 0.4s ease" }}>
               <LoginIcon />
             </ListItemIcon>
-            <ListItemText primary="Register" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
+            <ListItemText primary="Login" primaryTypographyProps={{ fontWeight: 600, fontSize: "0.9rem" }} />
           </ListItemButton>
         ) : (
           <>
@@ -459,7 +466,7 @@ const HomepageNavbar = () => {
                   <LoginButton onClick={handleLoginClick}>
                     <Box className="login-content">
                       <LoginIcon className="login-icon" />
-                      Register
+                      Login
                     </Box>
                   </LoginButton>
                 ) : (
@@ -576,11 +583,11 @@ const HomepageNavbar = () => {
         {drawer}
       </Drawer>
 
-      {/* Login/Account required dialog */}
+      {/* Login required dialog */}
       <Dialog open={loginDialogOpen} onClose={() => setLoginDialogOpen(false)}>
-        <DialogTitle>Account required</DialogTitle>
+        <DialogTitle>Login required</DialogTitle>
         <DialogContent>
-          Please create an account or log in to post an ad.
+          Please log in to post an ad.
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setLoginDialogOpen(false)}>Cancel</Button>
@@ -588,18 +595,18 @@ const HomepageNavbar = () => {
             variant="contained"
             onClick={() => {
               setLoginDialogOpen(false);
-              navigate("/auth?mode=register");
+              navigate("/auth?mode=login");
             }}
           >
-            Go to Register
+            Go to Login
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Optional snackbar hint */}
+      {/* Snackbar */}
       <Snackbar open={snackOpen} autoHideDuration={2000} onClose={() => setSnackOpen(false)}>
         <Alert severity="info" onClose={() => setSnackOpen(false)}>
-          Please register or log in to continue.
+          Please log in to continue.
         </Alert>
       </Snackbar>
     </ThemeProvider>
