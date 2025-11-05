@@ -26,25 +26,46 @@ function stringToColor(str) {
 }
 
 function stringAvatar(name) {
+  const safe = name || "A";
   return {
     sx: {
-      bgcolor: stringToColor(name),
+      bgcolor: stringToColor(safe),
       width: 36,
       height: 36,
     },
-    children: name[0].toUpperCase(),
+    children: safe[0].toUpperCase(),
   };
 }
 
 // --- Format delivery time: "1 day" or "5 days" ---
 function formatDeliveryTime(time) {
-  const number = parseInt(time);
-  if (isNaN(number)) return time; // fallback
+  const number = parseInt(time, 10);
+  if (Number.isNaN(number)) return time || "—";
   return `${number} ${number === 1 ? "day" : "days"}`;
 }
 
+// --- Phone helpers ---
+const getPhone = (item) => {
+  const raw =
+    (item?.contact && String(item.contact)) ||
+    (item?.owner?.phone && String(item.owner.phone)) ||
+    "";
+  return raw.trim();
+};
+
+// keep digits and + only for tel: href
+const normalizeTelHref = (raw) => {
+  if (!raw) return "";
+  const cleaned = raw.replace(/[^\d+]/g, "");
+  return cleaned.startsWith("+") ? cleaned : cleaned; // don't guess country code
+};
+
 export default function ItemDetails({ item, onClose }) {
   if (!item) return null;
+
+  const phoneRaw = getPhone(item);
+  const telHref = normalizeTelHref(phoneRaw);
+  const hasPhone = Boolean(telHref);
 
   return (
     <Box
@@ -65,6 +86,7 @@ export default function ItemDetails({ item, onClose }) {
           to: { opacity: 1 },
         },
       }}
+      onClick={onClose}
     >
       <Box
         sx={{
@@ -83,6 +105,7 @@ export default function ItemDetails({ item, onClose }) {
             to: { transform: "scale(1)", opacity: 1 },
           },
         }}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Category */}
         <Chip label={item.category} color="primary" sx={{ mb: 1 }} />
@@ -99,23 +122,23 @@ export default function ItemDetails({ item, onClose }) {
 
         {/* Provider */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-          <Avatar {...stringAvatar(item.owner?.name || "John Doe")} />
-          <Typography variant="body2">{item.owner?.name || "John Doe"}</Typography>
+          <Avatar {...stringAvatar(item.owner?.name || "A")} />
+          <Typography variant="body2">{item.owner?.name || "anonymous"}</Typography>
         </Stack>
 
         {/* Delivery & Price */}
-        <Stack direction="row" spacing={3} sx={{ mb: 2 }}>
+        <Stack direction="row" spacing={3} sx={{ mb: 2, flexWrap: "wrap" }}>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <Timer fontSize="small" />
             <Typography>{formatDeliveryTime(item.deliveryTime)}</Typography>
           </Stack>
           <Stack direction="row" alignItems="center" spacing={0.5}>
             <AccountBalanceWallet fontSize="small" />
-            <Typography>{item.price.toLocaleString()} LKR</Typography>
+            <Typography>{Number(item.price || 0).toLocaleString()} LKR</Typography>
           </Stack>
         </Stack>
 
-        {/* Ratings */}
+        {/* Ratings (placeholder) */}
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
           <Rating value={4.5} precision={0.5} readOnly />
           <Typography variant="body2">(12 reviews)</Typography>
@@ -124,43 +147,70 @@ export default function ItemDetails({ item, onClose }) {
         <Divider sx={{ mb: 2 }} />
 
         {/* Specializations */}
-        <Typography variant="subtitle1" sx={{ mb: 1 }}>
-          Specializations
-        </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 3 }}>
-          {item.specializations?.map((spec, idx) => (
-            <Chip key={idx} label={spec} color="secondary" size="small" />
-          ))}
-        </Box>
+        {Array.isArray(item.specializations) && item.specializations.length > 0 && (
+          <>
+            <Typography variant="subtitle1" sx={{ mb: 1 }}>
+              Specializations
+            </Typography>
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mb: 3 }}>
+              {item.specializations.map((spec, idx) => (
+                <Chip key={idx} label={spec} color="secondary" size="small" />
+              ))}
+            </Box>
+          </>
+        )}
 
         {/* Contact */}
         <Typography variant="h6" gutterBottom>
           Contact Provider
         </Typography>
-        <Typography variant="body2" sx={{ mb: 2 }}>
-          📞 {item.contact || "Not Provided"}
+        <Typography variant="body2" sx={{ mb: 2, wordBreak: "break-word" }}>
+          📞 {phoneRaw || "Not Provided"}
         </Typography>
 
         {/* Actions */}
         <Stack spacing={1}>
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            sx={{
-              bgcolor: "#1a237e",
-              "&:hover": { bgcolor: "#0d47a1" },
-              transition: "all 0.3s ease",
-            }}
-          >
-            📅 Book Now
-          </Button>
+          {hasPhone ? (
+            <Button
+              component="a"
+              href={`tel:${telHref}`}
+              variant="contained"
+              color="primary"
+              fullWidth
+              sx={{
+                bgcolor: "#1a237e",
+                "&:hover": { bgcolor: "#0d47a1" },
+                transition: "all 0.3s ease",
+                textTransform: "none",
+                fontWeight: 700,
+              }}
+            >
+              📞 Call Now
+            </Button>
+          ) : (
+            <Button
+              variant="contained"
+              fullWidth
+              disabled
+              sx={{
+                bgcolor: "#9e9e9e",
+                "&:hover": { bgcolor: "#9e9e9e" },
+                transition: "all 0.3s ease",
+                textTransform: "none",
+                fontWeight: 700,
+              }}
+              title="No contact number provided"
+            >
+              📞 Call Now
+            </Button>
+          )}
+
           <Button
             variant="outlined"
             fullWidth
             color="error"
             onClick={onClose}
-            sx={{ transition: "all 0.3s ease" }}
+            sx={{ transition: "all 0.3s ease", textTransform: "none", fontWeight: 600 }}
           >
             Close
           </Button>

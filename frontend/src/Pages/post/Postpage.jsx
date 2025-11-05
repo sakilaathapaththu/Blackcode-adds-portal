@@ -1,7 +1,6 @@
-// src/Pages/post/Postpage.jsx
+
 import React, { useEffect, useState } from "react";
 import {
-  Container,
   Card,
   CardContent,
   CardMedia,
@@ -20,7 +19,7 @@ import { Timer, AccountBalanceWallet, Image as ImageIcon } from "@mui/icons-mate
 import Sortingpanel from "../../Components/Home/Sortingpanel";
 import ItemForm from "../../Components/post/PostsForm";
 import ItemDetails from "../../Components/post/PostsDetailsview";
-import http from "../../Utils/http"; // ✅ use shared axios instance
+import http from "../../Utils/http"; // shared axios instance
 
 // ---- helpers ----
 function stringToColor(str = "A") {
@@ -34,7 +33,7 @@ function stringToColor(str = "A") {
   return color;
 }
 function stringAvatar(name = "A") {
-  return { sx: { bgcolor: stringToColor(name), width: 28, height: 28 }, children: name[0].toUpperCase() };
+  return { sx: { bgcolor: stringToColor(name), width: 28, height: 28 }, children: name[0]?.toUpperCase() || "A" };
 }
 function formatDeliveryTime(time) {
   const n = parseInt(time, 10);
@@ -66,11 +65,23 @@ function ImagePlaceholder() {
     </Box>
   );
 }
-// Build absolute file URL from http baseURL (which ends with /api)
+
+// ✅ Build absolute file URL via API base (works in prod and dev)
 const fileURL = (relPath) => {
   if (!relPath) return null;
-  const apiRoot = (http.defaults?.baseURL || "").replace(/\/api\/?$/, "");
-  return `${apiRoot}${relPath}`;
+
+  // If already absolute (http/https), return as-is
+  if (/^https?:\/\//i.test(relPath)) return relPath;
+
+  // Normalise incoming relative path
+  let p = relPath.startsWith("/") ? relPath : `/${relPath}`;
+
+  // If backend already sent '/api/...' just return it (works behind Apache)
+  if (p.startsWith("/api/")) return p;
+
+  // Otherwise prefix with axios baseURL (ends with /api), so '/uploads/x.jpg' -> '/api/uploads/x.jpg'
+  const base = (http.defaults?.baseURL || "/api").replace(/\/+$/, "");
+  return `${base}${p}`;
 };
 
 export default function ItemsPage() {
@@ -141,7 +152,7 @@ export default function ItemsPage() {
         result.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
         break;
       case "rating":
-        result.sort((a, b) => (Number(b.rating || 0) - Number(a.rating || 0)));
+        result.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
         break;
       default:
         // "newest" or any other → leave as API order
@@ -171,14 +182,13 @@ export default function ItemsPage() {
       }
 
       await http.post("/posts", data, {
-        headers: { /* Authorization handled by interceptor */ "Content-Type": "multipart/form-data" },
+        headers: { "Content-Type": "multipart/form-data" }, // auth header added by interceptor
       });
 
       const res = await http.get("/posts");
       setItems(res.data || []);
       setIsFormOpen(false);
     } catch (err) {
-      // You can surface err.message to a toast/snackbar if needed
       console.error(err);
     }
   };
@@ -288,14 +298,9 @@ export default function ItemsPage() {
                           mb: 2,
                         }}
                       >
-                      
                         {truncateWords(item.description, 10)}{" "}
                         {String(item.description || "").split(/\s+/).length > 10 && (
-                          <Button
-                            size="small"
-                            sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
-                            onClick={() => setSelectedItem(item)}
-                          >
+                          <Button size="small" sx={{ textTransform: "none", p: 0, minWidth: "auto" }} onClick={() => setSelectedItem(item)}>
                             See more
                           </Button>
                         )}
@@ -304,9 +309,7 @@ export default function ItemsPage() {
                       <Stack direction="row" spacing={2} mb={1.5}>
                         <Stack direction="row" alignItems="center" spacing={0.5}>
                           <Timer fontSize="small" color="action" />
-                          <Typography variant="body2">
-                            {formatDeliveryTime(item.deliveryTime)}
-                          </Typography>
+                          <Typography variant="body2">{formatDeliveryTime(item.deliveryTime)}</Typography>
                         </Stack>
                         <Stack direction="row" alignItems="center" spacing={0.5}>
                           <AccountBalanceWallet fontSize="small" color="action" />

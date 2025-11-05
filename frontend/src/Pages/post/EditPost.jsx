@@ -1,3 +1,5 @@
+
+// src/Pages/Posts/EditPost.jsx (or wherever your EditPost lives)
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import {
   Box,
@@ -31,10 +33,26 @@ const CATEGORY_OPTIONS = [
 ];
 
 // ---------- Helpers ----------
+// ✅ Robust image URL builder:
+// - Absolute URLs → return as-is
+// - Ensure leading slash for relative paths
+// - Accept both '/uploads/...' and '/api/uploads/...'
+// - If path doesn’t start with '/api/', prefix with axios base (which ends with /api in prod)
 const fileURL = (rel) => {
   if (!rel) return null;
-  const api = (http.defaults?.baseURL || "").replace(/\/api\/?$/, "");
-  return `${api}${rel}`;
+
+  // already absolute?
+  if (/^https?:\/\//i.test(rel)) return rel;
+
+  // normalise leading slash
+  let p = rel.startsWith("/") ? rel : `/${rel}`;
+
+  // if backend returned '/api/...', keep as-is
+  if (p.startsWith("/api/")) return p;
+
+  // otherwise prefix with axios baseURL (defaults to '/api')
+  const base = (http.defaults?.baseURL || "/api").replace(/\/+$/, "");
+  return `${base}${p}`; // e.g. '/api' + '/uploads/foo.jpg'
 };
 
 const asString = (v) => (v === null || v === undefined ? "" : String(v));

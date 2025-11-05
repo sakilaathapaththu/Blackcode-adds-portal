@@ -6,32 +6,46 @@
     <!-- ===== Primary SEO ===== -->
     <title>SpotMyAd — Sri Lanka’s All-in-One Classifieds for Students & Everyone</title>
     <meta name="description" content="SpotMyAd is Sri Lanka’s smart marketplace to post and discover classifieds: assignments & tuition, part-time jobs, services, rentals, electronics, vehicles, and more. Built for university students and everyone across all districts." />
-    <meta name="keywords" content="SpotMyAd, Sri Lanka classifieds, Sri Lanka ads, student assignments, assignment help Sri Lanka, tuition classes, part-time jobs Sri Lanka, services Sri Lanka, buy and sell Sri Lanka, rentals apartments rooms boarding, electronics phones laptops, vehicles cars bikes, freelance gigs, find work Sri Lanka, blackcodedev, Western Province, Central, Southern, Northern, Eastern, North Western, North Central, Uva, Sabaragamuwa, Colombo Kandy Galle Jaffna Batticaloa Anuradhapura Kurunegala Ratnapura Badulla Matara Gampaha Kalutara Matale Nuwara Eliya Hambantota Trincomalee Mannar Vavuniya Mullaitivu Kilinochchi Polonnaruwa Puttalam Monaragala Kegalle" />
+    <meta name="keywords" content="SpotMyAd, Sri Lanka classifieds, Sri Lanka ads, Lanka ads, free ads Sri Lanka, post ad Sri Lanka, buy and sell Sri Lanka, second hand Sri Lanka, used phones Sri Lanka, used laptops Sri Lanka, rental rooms Sri Lanka, boarding Sri Lanka, apartments Sri Lanka, vehicles Sri Lanka, cars Sri Lanka, bikes Sri Lanka, tuk Sri Lanka, delivery jobs Sri Lanka, part-time jobs Sri Lanka, freelance Sri Lanka, assignment help Sri Lanka, tuition classes Sri Lanka, graphic design Sri Lanka, web development Sri Lanka, IT services Sri Lanka, digital marketing Sri Lanka, printing Sri Lanka, repair services Sri Lanka, house services Sri Lanka, Colombo Kandy Galle Jaffna Batticaloa Anuradhapura Kurunegala Ratnapura Badulla Matara Gampaha Kalutara Matale Nuwara Eliya Hambantota Trincomalee Mannar Vavuniya Mullaitivu Kilinochchi Polonnaruwa Puttalam Monaragala Kegalle, Western Central Southern Northern Eastern North Western North Central Uva Sabaragamuwa" />
     <meta name="author" content="BlackCode Devs" />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#007BFF" />
     <meta name="referrer" content="no-referrer-when-downgrade" />
 
-    <!-- Canonical: use subdomain first; switch to https://spotmyad.com when ready -->
+    <!-- Canonical -->
     <link rel="canonical" href="https://spotmyad.blackcodedev.com/" />
-<link rel="sitemap" type="application/xml" href="https://spotmyad.blackcodedev.com/sitemap.xml" />
 
-    <!-- Hreflang (English default; Sinhala & Tamil alternates if you localize routes) -->
+    <!-- Single sitemap reference -->
+    <link rel="sitemap" type="application/xml" href="https://spotmyad.blackcodedev.com/sitemap.xml" />
+
+    <!-- Hreflang -->
     <link rel="alternate" href="https://spotmyad.blackcodedev.com/" hreflang="en-lk" />
     <link rel="alternate" href="https://spotmyad.blackcodedev.com/si" hreflang="si-lk" />
     <link rel="alternate" href="https://spotmyad.blackcodedev.com/ta" hreflang="ta-lk" />
     <link rel="alternate" href="https://spotmyad.blackcodedev.com/" hreflang="x-default" />
 
-    <!-- ===== Open Graph (Facebook/LinkedIn/WhatsApp) ===== -->
+    <!-- ===== Resource Hints ===== -->
+    <!-- Your API host: improves first fetch times -->
+    <link rel="dns-prefetch" href="https://api.spotmyad.blackcodedev.com">
+    <link rel="preconnect" href="https://api.spotmyad.blackcodedev.com" crossorigin>
+
+    <!-- (Optional) Google Fonts preconnect if you use them -->
+    <!--
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    -->
+
+    <!-- ===== Open Graph ===== -->
     <meta property="og:type" content="website" />
     <meta property="og:title" content="SpotMyAd — Sri Lanka’s All-in-One Classifieds for Students & Everyone" />
     <meta property="og:description" content="Post & discover ads across Sri Lanka: assignments, tuition, jobs, services, rentals, electronics, vehicles, more. Free to list; fast to find." />
     <meta property="og:url" content="https://spotmyad.blackcodedev.com/" />
     <meta property="og:site_name" content="SpotMyAd" />
     <meta property="og:locale" content="en_LK" />
-    <!-- Put a real social share image in /public/og-cover.jpg (1200x630) -->
-    <meta property="og:image" content="%PUBLIC_URL%/og-cover.jpg" />
+    <!-- Use absolute URL for share image -->
+    <meta property="og:image" content="https://spotmyad.blackcodedev.com/og-cover.jpg" />
+    <meta property="og:image:secure_url" content="https://spotmyad.blackcodedev.com/og-cover.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
 
@@ -39,24 +53,20 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="SpotMyAd — Sri Lanka’s All-in-One Classifieds" />
     <meta name="twitter:description" content="Buy, sell, hire, or find help—assignments, tuition, part-time jobs, services, rentals, electronics, vehicles, more." />
-    <meta name="twitter:image" content="%PUBLIC_URL%/og-cover.jpg" />
+    <meta name="twitter:image" content="https://spotmyad.blackcodedev.com/og-cover.jpg" />
 
-    <!-- ===== App Icons / PWA ===== -->
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <link rel="apple-touch-icon" href="%PUBLIC_URL%/apple-touch-icon.png" />
-    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
-
-    <!-- ===== Preconnect (fonts/CDNs you actually use) ===== -->
-    <!-- Example for Google Fonts: uncomment if you load fonts from Google -->
-    <!--
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    -->
-
-    <!-- ===== Sitemap & Robots ===== -->
-    <!-- Generate these in production -->
-    <link rel="sitemap" type="application/xml" href="https://spotmyad.blackcodedev.com/sitemap.xml" />
-    <!-- robots.txt should live at /public/robots.txt -->
+    <!-- ===== Icons / Favicon (robust set) ===== -->
+    <!-- ICO fallback (most reliable for browsers) -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <!-- PNG favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <!-- Apple touch icon -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <!-- Safari pinned tab (optional if you have an SVG) -->
+    <!-- <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#007BFF"> -->
+    <!-- Manifest / PWA -->
+    <link rel="manifest" href="/manifest.json" />
 
     <!-- ===== Ownership Verifications (optional) ===== -->
     <!-- <meta name="google-site-verification" content="YOUR_TOKEN_HERE" /> -->
@@ -97,7 +107,7 @@
     }
     </script>
 
-    <!-- ===== FAQ JSON-LD (helps SEO for common intents) ===== -->
+    <!-- ===== FAQ JSON-LD ===== -->
     <script type="application/ld+json">
     {
       "@context":"https://schema.org",
@@ -130,6 +140,11 @@
         }
       ]
     }
+    </script>
+
+    <!-- ===== Expose API base (optional; for your JS to read) ===== -->
+    <script>
+      window.__API_BASE__ = "https://api.spotmyad.blackcodedev.com/api";
     </script>
   </head>
 

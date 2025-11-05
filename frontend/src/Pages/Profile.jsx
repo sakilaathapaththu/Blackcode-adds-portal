@@ -1,4 +1,4 @@
-// src/Pages/Profile.jsx
+
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import {
   Box,
@@ -83,12 +83,27 @@ function ImagePlaceholder() {
   );
 }
 
+// ✅ Build absolute file URL via API base (works in prod and dev)
+const fileURL = (relPath) => {
+  if (!relPath) return null;
+
+  // Already absolute?
+  if (/^https?:\/\//i.test(relPath)) return relPath;
+
+  // Normalise incoming relative path
+  let p = relPath.startsWith("/") ? relPath : `/${relPath}`;
+
+  // If backend already included '/api/...', use as-is
+  if (p.startsWith("/api/")) return p;
+
+  // Otherwise prefix with axios baseURL (ends with /api)
+  const base = (http.defaults?.baseURL || "/api").replace(/\/+$/, "");
+  return `${base}${p}`; // '/api/uploads/filename.jpg'
+};
+
 function PostImage({ src, alt }) {
   if (!src) return <ImagePlaceholder />;
-
-  // http.defaults.baseURL = "http://host:port/api" → strip trailing /api for file URLs
-  const API_ROOT = (http.defaults?.baseURL || "").replace(/\/api\/?$/, "");
-  const full = `${API_ROOT}${src}`;
+  const full = fileURL(src);
 
   return (
     <Box
@@ -168,8 +183,7 @@ export default function Profile() {
   const fetchUserPosts = async () => {
     try {
       setState((s) => ({ ...s, loading: true, error: "" }));
-      // http baseURL already includes /api
-      const res = await http.get("/posts/user/me");
+      const res = await http.get("/posts/user/me"); // baseURL already includes /api
       setPosts(res.data || []);
     } catch (err) {
       setState((s) => ({ ...s, error: err?.message || "Failed to load your posts." }));
