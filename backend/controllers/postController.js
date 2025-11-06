@@ -40,7 +40,7 @@ export const createPost = async (req, res) => {
       // NOTE: status & sponsored are admin-only; ignore here for normal users
     } = req.body;
 
-    if (!title || !description || !price || !category)
+    if (!title || !category)
       return res
         .status(400)
         .json({ message: "Title, description, price, and category are required" });

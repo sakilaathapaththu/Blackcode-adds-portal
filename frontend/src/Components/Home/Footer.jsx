@@ -248,7 +248,7 @@ const Footer = () => {
                             filter: "brightness(2)",
                           }}
                         >
-                          OUTSOURCE.COM
+                          SpotMyAd.com
                         </Typography>
                       </Box>
                     </FloatingLogo>

@@ -240,7 +240,7 @@ const HomepageNavbar = () => {
             <ShoppingBagIcon sx={{ fontSize: 20 }} />
           </Avatar>
           <Typography variant="h6" sx={{ fontWeight: 700, fontSize: "1.1rem" }}>
-            OUTSOURCE.COM
+            SpotMyAd.COM
           </Typography>
         </Box>
         <IconButton onClick={handleDrawerToggle} sx={{ color: "white" }}>
@@ -416,7 +416,7 @@ const HomepageNavbar = () => {
                 letterSpacing: "-0.02em",
               }}
             >
-              OUTSOURCE
+              SpotMyAd
             </Typography>
           </AnimatedLogo>
 
