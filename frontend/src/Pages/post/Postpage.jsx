@@ -1,6 +1,6 @@
-
 import React, { useEffect, useState } from "react";
 import {
+  Container,
   Card,
   CardContent,
   CardMedia,
@@ -33,7 +33,7 @@ function stringToColor(str = "A") {
   return color;
 }
 function stringAvatar(name = "A") {
-  return { sx: { bgcolor: stringToColor(name), width: 28, height: 28 }, children: name[0]?.toUpperCase() || "A" };
+  return { sx: { bgcolor: stringToColor(name), width: 28, height: 28 }, children: name[0].toUpperCase() };
 }
 function formatDeliveryTime(time) {
   const n = parseInt(time, 10);
@@ -242,20 +242,53 @@ export default function ItemsPage() {
                 <Card
                   key={item._id}
                   sx={{
+                    position: "relative",
                     display: "flex",
                     flexDirection: { xs: "column", sm: "row" },
                     borderRadius: 2,
                     overflow: "hidden",
                     height: { xs: "auto", sm: 280 },
-                    boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
+                    boxShadow: item.sponsored
+                      ? "0 0 0px rgba(255, 193, 7, 0.6)"
+                      : "0 4px 15px rgba(0,0,0,0.08)",
+                    border: item.sponsored ? "3px solid #ffe100ff" : "none",
                     transition: "all 0.3s ease",
                     "&:hover": {
                       transform: "translateY(-4px)",
-                      boxShadow: "0 8px 25px rgba(0,123,255,0.15)",
+                      boxShadow: item.sponsored
+                        ? "0 0 10px rgba(255, 193, 7, 0.8)"
+                        : "0 8px 25px rgba(0,123,255,0.15)",
                     },
                   }}
                 >
-                  {/* Image */}
+                  {/* 🟡 Animated Sponsored Badge */}
+                  {item.sponsored && (
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        top: 12,
+                        left: 12,
+                        px: 1.8,
+                        py: 0.6,
+                        borderRadius: "8px",
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        color: "#000",
+                        textTransform: "uppercase",
+                        background: "linear-gradient(90deg, #ffeb3b, #ffca28, #ffeb3b)",
+                        backgroundSize: "200% 100%",
+                        animation: "shine 2s linear infinite",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                        "@keyframes shine": {
+                          "0%": { backgroundPosition: "200% 0" },
+                          "100%": { backgroundPosition: "-200% 0" },
+                        },
+                      }}
+                    >
+                      Sponsored
+                    </Box>
+                  )}
+
                   <Box sx={{ flex: { xs: "0 0 200px", sm: "0 0 280px" }, height: { xs: 200, sm: "100%" } }}>
                     {imgSrc ? (
                       <CardMedia component="img" image={imgSrc} alt={item.title} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />

@@ -60,12 +60,31 @@ const normalizeTelHref = (raw) => {
   return cleaned.startsWith("+") ? cleaned : cleaned; // don't guess country code
 };
 
+// build WhatsApp deeplink (uses LK code 94 if number is 10 digits)
+const buildWhatsAppHref = (raw) => {
+  if (!raw) return "";
+  const cleaned = raw.replace(/[^\d+0-9]/g, "");
+  // If starts with +, wa.me wants digits only without '+'
+  if (cleaned.startsWith("+")) {
+    const digits = cleaned.replace(/\D/g, "");
+    return digits ? `https://wa.me/${digits}` : "";
+  }
+  // If it's 10 digits (your form enforces this), assume Sri Lanka and prefix 94.
+  const digitsOnly = cleaned.replace(/\D/g, "");
+  const DEFAULT_CC = "94";
+  const withCC = digitsOnly.length === 10 ? DEFAULT_CC + digitsOnly : digitsOnly;
+  return withCC ? `https://wa.me/${withCC}` : "";
+};
+
 export default function ItemDetails({ item, onClose }) {
   if (!item) return null;
 
   const phoneRaw = getPhone(item);
   const telHref = normalizeTelHref(phoneRaw);
   const hasPhone = Boolean(telHref);
+
+  const waHref = buildWhatsAppHref(phoneRaw);
+  const hasWhatsApp = Boolean(waHref);
 
   return (
     <Box
@@ -202,6 +221,31 @@ export default function ItemDetails({ item, onClose }) {
               title="No contact number provided"
             >
               📞 Call Now
+            </Button>
+          )}
+
+          {/* NEW: WhatsApp message button */}
+          {hasWhatsApp ? (
+            <Button
+              component="a"
+              href={waHref}
+              target="_blank"
+              rel="noopener"
+              variant="outlined"
+              fullWidth
+              sx={{ textTransform: "none", fontWeight: 700 }}
+            >
+              💬 Message on WhatsApp
+            </Button>
+          ) : (
+            <Button
+              variant="outlined"
+              fullWidth
+              disabled
+              sx={{ textTransform: "none", fontWeight: 700 }}
+              title="No WhatsApp-compatible number"
+            >
+              💬 Message on WhatsApp
             </Button>
           )}
 
