@@ -1,3 +1,11 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+
+# Don’t index private/protected app pages
+Disallow: /auth
+Disallow: /profile
+Disallow: /dashboard
+Disallow: /posts/new
+Disallow: /posts/edit
+
+Sitemap: https://spotmyad.blackcodedev.com/sitemap.xml

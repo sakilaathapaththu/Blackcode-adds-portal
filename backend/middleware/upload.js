@@ -1,4 +1,4 @@
-// middleware/upload.js
+
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (req, file, cb) => {
+const fileFilter = (_req, file, cb) => {
   // accept images only
   if (!file.mimetype.startsWith("image/")) {
     cb(new Error("Only image files are allowed!"), false);

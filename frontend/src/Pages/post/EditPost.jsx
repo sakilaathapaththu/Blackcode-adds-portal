@@ -1,366 +1,478 @@
-import React, { useState, useEffect, useContext } from "react";
-import { AuthContext } from "../../Context/AuthContext";
-import { useParams, useNavigate } from "react-router-dom";
+
+// src/Pages/Posts/EditPost.jsx (or wherever your EditPost lives)
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import {
-  Container,
-  Typography,
-  TextField,
-  Button,
   Box,
-  Paper,
+  Container,
+  TextField,
+  Typography,
   Stack,
-  Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  Divider,
-  Chip,
+  Button,
+  MenuItem,
+  FormControlLabel,
+  Switch,
+  Alert,
+  Paper,
 } from "@mui/material";
-import {
-  AccessTime,
-  Category,
-  Phone,
-  Image as ImageIcon,
-  AccountBalanceWallet,
-} from "@mui/icons-material";
-import axios from "axios";
+import { useNavigate, useParams } from "react-router-dom";
+import { Image as ImageIcon, Save as SaveIcon, Upload as UploadIcon } from "@mui/icons-material";
+import http from "../../Utils/http";
+import { AuthContext } from "../../Context/AuthContext";
 
-const API_URL = "http://localhost:5000/api/posts";
+// ---------- Category options ----------
+const CATEGORY_OPTIONS = [
+  "All Categories",
+  "Web Development",
+  "Design",
+  "Marketing",
+  "AI & ML",
+  "Consulting",
+  "Content Writing",
+  "Education",
+  "Others",
+];
 
+// ---------- Helpers ----------
+// ✅ Robust image URL builder:
+// - Absolute URLs → return as-is
+// - Ensure leading slash for relative paths
+// - Accept both '/uploads/...' and '/api/uploads/...'
+// - If path doesn’t start with '/api/', prefix with axios base (which ends with /api in prod)
+const fileURL = (rel) => {
+  if (!rel) return null;
+
+  // already absolute?
+  if (/^https?:\/\//i.test(rel)) return rel;
+
+  // normalise leading slash
+  let p = rel.startsWith("/") ? rel : `/${rel}`;
+
+  // if backend returned '/api/...', keep as-is
+  if (p.startsWith("/api/")) return p;
+
+  // otherwise prefix with axios baseURL (defaults to '/api')
+  const base = (http.defaults?.baseURL || "/api").replace(/\/+$/, "");
+  return `${base}${p}`; // e.g. '/api' + '/uploads/foo.jpg'
+};
+
+const asString = (v) => (v === null || v === undefined ? "" : String(v));
+const asNumberOrEmpty = (v) => {
+  if (v === null || v === undefined || v === "") return "";
+  const n = Number(v);
+  return Number.isFinite(n) ? n : "";
+};
+
+// Convert server date → local "YYYY-MM-DDTHH:mm" for <input type="datetime-local">
+const toLocalInput = (dateStr) => {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (isNaN(d)) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+};
+
+// Keep the local value as-is for backend parsing
+const fromLocalInput = (v) => v || "";
+
+// ---------- Component ----------
 export default function EditPost() {
-  const { token } = useContext(AuthContext);
   const { id } = useParams();
   const navigate = useNavigate();
+  const { token, user } = useContext(AuthContext);
 
-  const [formData, setFormData] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
-  const [image, setImage] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [wordCount, setWordCount] = useState(0);
-  const maxWords = 150;
+  const isAdmin = user?.role === "provider";
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    price: "",
+    category: "",
+    deliveryTime: "",
+    contact: "",
+    specializationsText: "",
+    startDate: "",
+    endDate: "",
+    status: "pending",
+    sponsored: false,
+    imagePath: "",
+  });
+  const [imageFile, setImageFile] = useState(null);
+
+  const previewSrc = useMemo(() => {
+    if (imageFile) return URL.createObjectURL(imageFile);
+    return form.imagePath ? fileURL(form.imagePath) : null;
+  }, [imageFile, form.imagePath]);
 
   useEffect(() => {
-    const fetchPost = async () => {
+    let revoked = false;
+    const fetchOne = async () => {
       try {
-        const res = await axios.get(`${API_URL}/${id}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        setLoading(true);
+        setError("");
+        const res = await http.get(`/posts/${id}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-        const post = res.data;
-        setFormData({
-          title: post.title,
-          description: post.description,
-          category: post.category,
-          price: post.price,
-          deliveryTime: post.deliveryTime,
-          specializations: post.specializations.join(", "),
-          contact: post.contact,
-          id: post._id,
+        const p = res.data || {};
+        setForm({
+          title: asString(p.title),
+          description: asString(p.description),
+          price: asNumberOrEmpty(p.price),
+          category: asString(p.category),
+          deliveryTime: asString(p.deliveryTime),
+          contact: asString(p.contact),
+          specializationsText: Array.isArray(p.specializations) ? p.specializations.join(", ") : "",
+          startDate: toLocalInput(p.startDate),
+          endDate: toLocalInput(p.endDate),
+          status: asString(p.status || "pending"),
+          sponsored: !!p.sponsored,
+          imagePath: asString(p.image || ""),
         });
-        if (post.image) setImagePreview(post.image);
-        setWordCount(post.description.trim().split(/\s+/).length);
-      } catch (err) {
-        console.error(err);
-        alert("Failed to fetch post");
-        navigate("/profile");
+      } catch (e) {
+        setError(e?.message || "Failed to load post.");
+      } finally {
+        setLoading(false);
       }
     };
-    fetchPost();
-  }, [id, token, navigate]);
+    fetchOne();
 
-  const countWords = (text) => {
-    if (!text) return 0;
-    return text.trim().split(/\s+/).filter(Boolean).length;
-  };
+    return () => {
+      if (!revoked && imageFile) {
+        URL.revokeObjectURL(imageFile);
+        revoked = true;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, token]);
 
-  const validateForm = (data = formData) => {
-    const temp = {};
-    if (touched.title && !data.title.trim()) temp.title = "Title is required.";
-    if (touched.category && !data.category.trim()) temp.category = "Category is required.";
-    if (touched.price) {
-      if (!data.price.trim()) temp.price = "Price is required.";
-      else if (isNaN(Number(data.price)) || Number(data.price) <= 0)
-        temp.price = "Enter a valid price.";
+  // ----- validation -----
+  const validate = (data) => {
+    const errs = {};
+    const title = asString(data.title).trim();
+    const desc = asString(data.description).trim();
+    const priceStr = asString(data.price).trim();
+    const category = asString(data.category).trim();
+
+    if (!title) errs.title = "Title is required";
+    if (!desc) errs.description = "Description is required";
+    if (!category) errs.category = "Category is required";
+
+    if (!priceStr) {
+      errs.price = "Price is required";
+    } else if (!/^\d+(\.\d{1,2})?$/.test(priceStr)) {
+      errs.price = "Enter a valid number (max 2 decimals)";
+    } else if (Number(priceStr) < 0) {
+      errs.price = "Price must be ≥ 0";
     }
-    if (touched.deliveryTime && !data.deliveryTime.trim()) temp.deliveryTime = "Delivery time is required.";
-    if (touched.contact) {
-      if (!data.contact.trim()) temp.contact = "Contact is required.";
-      else if (!/^\d{10}$/.test(data.contact.trim())) temp.contact = "Phone must be 10 digits.";
+
+    if (data.startDate && data.endDate) {
+      const sd = new Date(data.startDate);
+      const ed = new Date(data.endDate);
+      if (sd > ed) errs.endDate = "End date must be after start date";
     }
-    if (touched.description && countWords(data.description) > maxWords)
-      temp.description = `Description cannot exceed ${maxWords} words.`;
-
-    setErrors(temp);
-    return temp;
+    return errs;
   };
 
-  const handleBlur = (e) => {
-    const { name } = e.target;
-    setTouched({ ...touched, [name]: true });
-    validateForm({ ...formData });
-  };
-
+  const [fieldErrors, setFieldErrors] = useState({});
   const handleChange = (e) => {
     const { name, value } = e.target;
-
-    if (!formData) return;
-
-    if (name === "description") {
-      const words = countWords(value);
-      if (words > maxWords) return;
-      setFormData({ ...formData, [name]: value });
-      setWordCount(words);
-    } else if (name === "price" || name === "contact") {
-      if (!/^\d*$/.test(value)) return;
-      if (name === "contact" && value.length > 10) return;
-      setFormData({ ...formData, [name]: value });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-
-    validateForm({ ...formData, [name]: value });
+    setForm((f) => ({ ...f, [name]: value }));
+  };
+  const handleBlur = () => {
+    setFieldErrors(validate(form));
   };
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    setImage(file);
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setImagePreview(reader.result);
-      reader.readAsDataURL(file);
-    }
+  const onPickImage = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
   };
 
-  const handleSubmit = async (e) => {
+  const parseSpecializations = (txt) =>
+    txt
+      .split(",")
+      .map((x) => x.trim())
+      .filter(Boolean);
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-
-    const allTouched = {
-      title: true,
-      description: true,
-      category: true,
-      price: true,
-      deliveryTime: true,
-      contact: true,
-    };
-    setTouched(allTouched);
-
-    const validation = validateForm();
-    if (Object.values(validation).some((x) => x)) return;
+    const errs = validate(form);
+    setFieldErrors(errs);
+    if (Object.keys(errs).length) return;
 
     try {
-      setLoading(true);
-      const data = new FormData();
-      Object.keys(formData).forEach((key) => {
-        if (key !== "id") data.append(key, formData[key]);
-      });
-      if (image) data.append("image", image);
-      if (formData.specializations.trim()) {
-        const arr = formData.specializations.split(",").map((s) => s.trim());
-        data.set("specializations", JSON.stringify(arr));
+      setSaving(true);
+      setError("");
+
+      const fd = new FormData();
+      fd.append("title", asString(form.title).trim());
+      fd.append("description", asString(form.description).trim());
+      fd.append("price", asString(form.price).trim());
+      fd.append("category", asString(form.category).trim());
+      if (form.deliveryTime) fd.append("deliveryTime", asString(form.deliveryTime).trim());
+      if (form.contact) fd.append("contact", asString(form.contact).trim());
+
+      // Even though fields are disabled, we keep sending the original values (read-only display)
+      if (form.startDate) fd.append("startDate", fromLocalInput(form.startDate));
+      if (form.endDate) fd.append("endDate", fromLocalInput(form.endDate));
+
+      fd.append("specializations", JSON.stringify(parseSpecializations(form.specializationsText)));
+
+      if (isAdmin) {
+        fd.append("status", form.status);
+        fd.append("sponsored", form.sponsored ? "1" : "0");
       }
 
-      await axios.put(`${API_URL}/${formData.id}`, data, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+      if (imageFile) fd.append("image", imageFile);
+
+      await http.put(`/posts/${id}`, fd, {
+        headers: { Authorization: `Bearer ${token}` }, // let browser set multipart boundary
       });
+
       navigate("/profile");
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update post");
+    } catch (e2) {
+      setError(e2?.message || "Failed to update post.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (!formData) return <Typography>Loading...</Typography>;
+  if (loading) {
+    return (
+      <Container maxWidth="md" sx={{ mt: { xs: 10, md: 12 } }}>
+        <Typography>Loading…</Typography>
+      </Container>
+    );
+  }
 
-  const specializationsArray = formData.specializations
-    ? formData.specializations.split(",").map((s) => s.trim()).filter(Boolean)
-    : [];
-
-  const limitWords = (text) => {
-    if (!text) return "";
-    const words = text.split(/\s+/);
-    if (words.length <= maxWords) return text;
-    return words.slice(0, maxWords).join(" ") + "...";
-  };
-
-  const isLimitReached = wordCount >= maxWords;
-  const isFormInvalid = loading || isLimitReached || Object.values(errors).some((v) => v);
+  // If the existing category from server isn’t in the list, keep it selectable
+  const categoryOptions = CATEGORY_OPTIONS.includes(form.category)
+    ? CATEGORY_OPTIONS
+    : form.category
+    ? [form.category, ...CATEGORY_OPTIONS]
+    : CATEGORY_OPTIONS;
 
   return (
-    <Box sx={{ bgcolor: "#f5f7fa", minHeight: "100vh", py: 10 }}>
-      <Container maxWidth="lg">
-        <Box sx={{ mb: 4, textAlign: "left" }}>
-          <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
-            Edit Post
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Update your post details and see live preview
-          </Typography>
-        </Box>
+    <Container maxWidth="md" sx={{ mt: { xs: 9, md: 10 }, mb: 4 }}>
+      <Typography variant="h5" fontWeight={800} sx={{ mb: 2 }}>
+        Edit Post
+      </Typography>
 
-        <Grid container spacing={4} alignItems="stretch">
-          {/* Left Column - Form */}
-          <Grid item xs={12} md={6} sx={{ maxWidth: 550, width: "100%" }}>
-            <Paper elevation={2} sx={{ p: 4, borderRadius: 2, bgcolor: "white" }}>
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
-                Post Details
-              </Typography>
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-              <Box component="form" onSubmit={handleSubmit}>
-                <Stack spacing={3}>
-                  {["title", "category", "price", "deliveryTime", "contact"].map((field) => (
-                    <TextField
-                      key={field}
-                      label={field.charAt(0).toUpperCase() + field.slice(1)}
-                      name={field}
-                      value={formData[field]}
-                      onChange={handleChange}
-                      onBlur={handleBlur}
-                      fullWidth
-                      required
-                      error={!!errors[field]}
-                      helperText={errors[field] || ""}
-                      inputProps={{ inputMode: field === "price" || field === "contact" ? "numeric" : "text" }}
-                    />
-                  ))}
+      <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 }, borderRadius: 2 }} component="form" onSubmit={onSubmit}>
+        <Stack spacing={2}>
+          {/* Image preview + picker */}
+          <Box
+            sx={{
+              position: "relative",
+              width: "100%",
+              height: { xs: 180, sm: 220 },
+              borderRadius: 1.5,
+              overflow: "hidden",
+              bgcolor: "#f5f5f5",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            {previewSrc ? (
+              <Box
+                component="img"
+                src={previewSrc}
+                alt="preview"
+                sx={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }}
+              />
+            ) : (
+              <Stack alignItems="center" spacing={1} color="text.secondary">
+                <ImageIcon />
+                <Typography variant="body2">No image uploaded</Typography>
+              </Stack>
+            )}
+          </Box>
 
-                  <TextField
-                    label="Description"
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    fullWidth
-                    multiline
-                    minRows={3}
-                    required
-                    error={!!errors.description}
-                    helperText={errors.description || `${wordCount}/${maxWords} words`}
-                    FormHelperTextProps={{ sx: { textAlign: "right", color: isLimitReached ? "error.main" : "text.secondary" } }}
-                  />
+          <Button
+            component="label"
+            startIcon={<UploadIcon />}
+            variant="outlined"
+            sx={{ alignSelf: "flex-start", textTransform: "none" }}
+          >
+            Choose Image
+            <input type="file" hidden accept="image/*" onChange={onPickImage} />
+          </Button>
 
-                  <TextField
-                    label="Specializations (comma separated)"
-                    name="specializations"
-                    value={formData.specializations}
-                    onChange={handleChange}
-                    fullWidth
-                  />
+          <TextField
+            label="Title"
+            name="title"
+            value={form.title}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={!!fieldErrors.title}
+            helperText={fieldErrors.title}
+            fullWidth
+            required
+          />
 
-                  <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
-                    {image ? "Change Image" : "Upload Image"}
-                    <input type="file" hidden accept="image/*" onChange={handleFileChange} />
-                  </Button>
-                  {image && <Typography>{image.name}</Typography>}
+          <TextField
+            label="Description"
+            name="description"
+            value={form.description}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={!!fieldErrors.description}
+            helperText={fieldErrors.description}
+            fullWidth
+            multiline
+            minRows={4}
+          />
 
-                  <Divider />
-
-                  <Stack direction="row" spacing={2} justifyContent="flex-end">
-                    <Button variant="outlined" onClick={() => navigate("/profile")}>
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="contained"
-                      type="submit"
-                      disabled={isFormInvalid}
-                      sx={{
-                        bgcolor: isFormInvalid ? "grey.400" : "#1a237e",
-                        opacity: isFormInvalid ? 0.6 : 1,
-                        "&:hover": { bgcolor: isFormInvalid ? "grey.500" : "#0d47a1" },
-                      }}
-                    >
-                      {loading ? "Updating..." : "Update Post"}
-                    </Button>
-                  </Stack>
-                </Stack>
-              </Box>
-            </Paper>
-          </Grid>
-
-          {/* Right Column - Live Preview */}
-          <Grid item xs={12} md={6} sx={{ maxWidth: 560, width: "100%" }}>
-            <Paper
-              elevation={2}
-              sx={{ p: 3, borderRadius: 2, bgcolor: "white", position: { md: "sticky", xs: "relative" }, top: { md: 20, xs: 0 } }}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Price (LKR)"
+              name="price"
+              value={asString(form.price)}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.price}
+              helperText={fieldErrors.price}
+              fullWidth
+              inputMode="decimal"
+            />
+            <TextField
+              label="Category"
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.category}
+              helperText={fieldErrors.category}
+              fullWidth
+              select
             >
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 600, mb: 3, color: "#1a237e" }}>
-                Live Preview
-              </Typography>
+              {categoryOptions.map((c) => (
+                <MenuItem key={c} value={c}>
+                  {c}
+                </MenuItem>
+              ))}
+            </TextField>
+          </Stack>
 
-              <Card sx={{ boxShadow: 3, borderRadius: 2, overflow: "hidden", transition: "transform 0.2s", "&:hover": { transform: "translateY(-4px)", boxShadow: 6 } }}>
-                {imagePreview ? (
-                  <CardMedia component="img" height="280" image={imagePreview} alt="Preview" sx={{ objectFit: "cover" }} />
-                ) : (
-                  <Box sx={{ height: 280, bgcolor: "#e3f2fd", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column" }}>
-                    <ImageIcon sx={{ fontSize: 64, color: "#90caf9" }} />
-                    <Typography variant="body2" color="text.secondary" mt={2}>
-                      No image uploaded
-                    </Typography>
-                  </Box>
-                )}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Delivery Time (days)"
+              name="deliveryTime"
+              value={form.deliveryTime}
+              onChange={handleChange}
+              fullWidth
+              inputMode="numeric"
+            />
+            <TextField
+              label="Contact"
+              name="contact"
+              value={form.contact}
+              onChange={handleChange}
+              fullWidth
+            />
+          </Stack>
 
-                <CardContent sx={{ p: 3 }}>
-                  <Typography variant="h5" gutterBottom sx={{ fontWeight: 700, color: formData.title ? "#1a237e" : "#bbb", mb: 2 }}>
-                    {formData.title || "Your Post Title"}
-                  </Typography>
+          <TextField
+            label="Specializations (comma separated)"
+            name="specializationsText"
+            value={form.specializationsText}
+            onChange={handleChange}
+            placeholder="Python, ML, React"
+            fullWidth
+          />
 
-                  <Stack spacing={2} sx={{ mb: 3 }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Category sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.category ? "text.primary" : "text.secondary"}>
-                        {formData.category || "Category not specified"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
-                      <Typography variant="body1" sx={{ fontWeight: 600, color: formData.price ? "#4caf50" : "#bbb" }}>
-                        {formData.price ? `LKR ${Number(formData.price).toLocaleString("en-LK")}` : "Price not set"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <AccessTime sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.deliveryTime ? "text.primary" : "text.secondary"}>
-                        {formData.deliveryTime || "Delivery time not specified"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <Phone sx={{ color: "#666", fontSize: 20 }} />
-                      <Typography variant="body2" color={formData.contact ? "text.primary" : "text.secondary"}>
-                        {formData.contact || "Contact not provided"}
-                      </Typography>
-                    </Box>
-                  </Stack>
+          {/* READ-ONLY WINDOW FIELDS */}
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+            <TextField
+              label="Start Date"
+              name="startDate"
+              type="datetime-local"
+              value={form.startDate || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ step: 60 }}
+              disabled
+              InputProps={{ readOnly: true }}
+              helperText="This field is not editable."
+            />
+            <TextField
+              label="End Date"
+              name="endDate"
+              type="datetime-local"
+              value={form.endDate || ""}
+              onChange={handleChange}
+              onBlur={handleBlur}
+              error={!!fieldErrors.endDate}
+              helperText={fieldErrors.endDate || "This field is not editable."}
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              inputProps={{ step: 60 }}
+              disabled
+              InputProps={{ readOnly: true }}
+            />
+          </Stack>
 
-                  <Divider sx={{ my: 2 }} />
+          {isAdmin && (
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems="center">
+              <TextField
+                label="Status"
+                name="status"
+                value={form.status}
+                onChange={handleChange}
+                select
+                sx={{ minWidth: { sm: 220 } }}
+              >
+                {["pending", "approved", "canceled"].map((s) => (
+                  <MenuItem key={s} value={s}>
+                    {s}
+                  </MenuItem>
+                ))}
+              </TextField>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={form.sponsored}
+                    onChange={(e) => setForm((f) => ({ ...f, sponsored: e.target.checked }))}
+                  />
+                }
+                label="Sponsored"
+              />
+            </Stack>
+          )}
 
-                  <Typography variant="body2" color={formData.description ? "text.primary" : "text.secondary"} sx={{ mb: 2, lineHeight: 1.7, whiteSpace: "pre-wrap" }}>
-                    {limitWords(formData.description) || "Description will appear here..."}
-                  </Typography>
-
-                  {specializationsArray.length > 0 && (
-                    <>
-                      <Divider sx={{ my: 2 }} />
-                      <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600, color: "#1a237e" }}>
-                        Specializations
-                      </Typography>
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                        {specializationsArray.map((spec, index) => (
-                          <Chip key={index} label={spec} size="small" sx={{ bgcolor: "#e3f2fd", color: "#1565c0", fontWeight: 500 }} />
-                        ))}
-                      </Box>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </Paper>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+          <Stack direction="row" spacing={1}>
+            <Button
+              type="submit"
+              variant="contained"
+              startIcon={<SaveIcon />}
+              disabled={saving}
+              sx={{ textTransform: "none", fontWeight: 700, px: 3 }}
+            >
+              {saving ? "Saving..." : "Save Changes"}
+            </Button>
+            <Button variant="text" onClick={() => navigate(-1)} sx={{ textTransform: "none" }}>
+              Cancel
+            </Button>
+          </Stack>
+        </Stack>
+      </Paper>
+    </Container>
   );
 }

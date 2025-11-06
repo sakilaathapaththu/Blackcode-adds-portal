@@ -1,4 +1,3 @@
-// src/Pages/post/Postpage.jsx
 import React, { useEffect, useState } from "react";
 import {
   Container,
@@ -17,14 +16,13 @@ import {
   useTheme,
 } from "@mui/material";
 import { Timer, AccountBalanceWallet, Image as ImageIcon } from "@mui/icons-material";
-import axios from "axios";
 import Sortingpanel from "../../Components/Home/Sortingpanel";
 import ItemForm from "../../Components/post/PostsForm";
 import ItemDetails from "../../Components/post/PostsDetailsview";
+import http from "../../Utils/http"; // shared axios instance
 
-const API_URL = "http://localhost:5000/api/posts";
-
-function stringToColor(str) {
+// ---- helpers ----
+function stringToColor(str = "A") {
   let hash = 0;
   for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
   let color = "#";
@@ -34,27 +32,20 @@ function stringToColor(str) {
   }
   return color;
 }
-
-function stringAvatar(name) {
-  return {
-    sx: { bgcolor: stringToColor(name), width: 28, height: 28 },
-    children: name[0].toUpperCase(),
-  };
+function stringAvatar(name = "A") {
+  return { sx: { bgcolor: stringToColor(name), width: 28, height: 28 }, children: name[0].toUpperCase() };
 }
-
 function formatDeliveryTime(time) {
-  const number = parseInt(time);
-  if (isNaN(number)) return time;
-  return `${number} ${number === 1 ? "day" : "days"}`;
+  const n = parseInt(time, 10);
+  if (Number.isNaN(n)) return time || "—";
+  return `${n} ${n === 1 ? "day" : "days"}`;
 }
-
 function truncateWords(text, wordLimit) {
   if (!text) return "";
   const words = text.trim().split(/\s+/);
   if (words.length <= wordLimit) return text;
   return words.slice(0, wordLimit).join(" ") + "...";
 }
-
 function ImagePlaceholder() {
   return (
     <Box
@@ -74,6 +65,24 @@ function ImagePlaceholder() {
     </Box>
   );
 }
+
+// ✅ Build absolute file URL via API base (works in prod and dev)
+const fileURL = (relPath) => {
+  if (!relPath) return null;
+
+  // If already absolute (http/https), return as-is
+  if (/^https?:\/\//i.test(relPath)) return relPath;
+
+  // Normalise incoming relative path
+  let p = relPath.startsWith("/") ? relPath : `/${relPath}`;
+
+  // If backend already sent '/api/...' just return it (works behind Apache)
+  if (p.startsWith("/api/")) return p;
+
+  // Otherwise prefix with axios baseURL (ends with /api), so '/uploads/x.jpg' -> '/api/uploads/x.jpg'
+  const base = (http.defaults?.baseURL || "/api").replace(/\/+$/, "");
+  return `${base}${p}`;
+};
 
 export default function ItemsPage() {
   const [items, setItems] = useState([]);
@@ -100,16 +109,16 @@ export default function ItemsPage() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Fetch posts
+  // Fetch posts via shared http
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await axios.get(API_URL);
-        setItems(res.data);
-        setFilteredItems(res.data);
+        setLoading(true);
+        const res = await http.get("/posts");
+        setItems(res.data || []);
+        setFilteredItems(res.data || []);
       } catch (err) {
-        console.error(err);
-        setError("Failed to load posts.");
+        setError(err?.message || "Failed to load posts.");
       } finally {
         setLoading(false);
       }
@@ -122,31 +131,31 @@ export default function ItemsPage() {
     let result = [...items];
 
     if (filters.search) {
-      result = result.filter((item) =>
-        item.title.toLowerCase().includes(filters.search.toLowerCase())
-      );
+      const q = String(filters.search).toLowerCase();
+      result = result.filter((item) => String(item.title || "").toLowerCase().includes(q));
     }
 
     if (filters.category && filters.category !== "All Categories") {
       result = result.filter((item) => item.category === filters.category);
     }
 
-    if (filters.priceRange) {
+    if (filters.priceRange && Array.isArray(filters.priceRange)) {
       const [min, max] = filters.priceRange;
-      result = result.filter((item) => item.price >= min && item.price <= max);
+      result = result.filter((item) => Number(item.price || 0) >= min && Number(item.price || 0) <= max);
     }
 
     switch (sortOption) {
       case "price-low":
-        result.sort((a, b) => a.price - b.price);
+        result.sort((a, b) => Number(a.price || 0) - Number(b.price || 0));
         break;
       case "price-high":
-        result.sort((a, b) => b.price - a.price);
+        result.sort((a, b) => Number(b.price || 0) - Number(a.price || 0));
         break;
       case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+        result.sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0));
         break;
       default:
+        // "newest" or any other → leave as API order
         break;
     }
 
@@ -154,8 +163,8 @@ export default function ItemsPage() {
   }, [filters, sortOption, items]);
 
   // Form handlers
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-  const handleFileChange = (e) => setImage(e.target.files[0]);
+  const handleChange = (e) => setFormData((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const handleFileChange = (e) => setImage(e.target.files?.[0] || null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -164,14 +173,20 @@ export default function ItemsPage() {
       Object.keys(formData).forEach((key) => data.append(key, formData[key]));
       if (image) data.append("image", image);
 
-      if (formData.specializations.trim() !== "") {
-        const arr = formData.specializations.split(",").map((s) => s.trim());
+      if (String(formData.specializations || "").trim() !== "") {
+        const arr = String(formData.specializations)
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
         data.set("specializations", JSON.stringify(arr));
       }
 
-      await axios.post(API_URL, data, { headers: { "Content-Type": "multipart/form-data" } });
-      const res = await axios.get(API_URL);
-      setItems(res.data);
+      await http.post("/posts", data, {
+        headers: { "Content-Type": "multipart/form-data" }, // auth header added by interceptor
+      });
+
+      const res = await http.get("/posts");
+      setItems(res.data || []);
       setIsFormOpen(false);
     } catch (err) {
       console.error(err);
@@ -215,139 +230,157 @@ export default function ItemsPage() {
       )}
 
       {/* Mobile Sorting Panel */}
-      {isMobile && (
-        <Sortingpanel onFiltersChange={handleFiltersChange} onSortChange={handleSortChange} />
-      )}
+      {isMobile && <Sortingpanel onFiltersChange={handleFiltersChange} onSortChange={handleSortChange} />}
 
       {/* Right Posts Section */}
       <Box sx={{ flex: 1, minWidth: 0 }}>
         {filteredItems.length > 0 ? (
           <Stack spacing={3}>
-            {filteredItems.map((item) => (
-              <Card
-                key={item._id}
-                sx={{
-                  display: "flex",
-                  flexDirection: { xs: "column", sm: "row" },
-                  borderRadius: 2,
-                  overflow: "hidden",
-                  height: { xs: "auto", sm: 280 },
-                  boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-                  transition: "all 0.3s ease",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 25px rgba(0,123,255,0.15)",
-                  },
-                }}
-              >
-                {/* Image */}
-                <Box
+            {filteredItems.map((item) => {
+              const imgSrc = fileURL(item.image);
+              return (
+                <Card
+                  key={item._id}
                   sx={{
-                    flex: { xs: "0 0 200px", sm: "0 0 280px" },
-                    height: { xs: 200, sm: "100%" },
-                  }}
-                >
-                  {item.image ? (
-                    <CardMedia
-                      component="img"
-                      image={`http://localhost:5000${item.image}`}
-                      alt={item.title}
-                      sx={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    />
-                  ) : (
-                    <ImagePlaceholder />
-                  )}
-                </Box>
-
-                {/* Details */}
-                <CardContent
-                  sx={{
-                    flex: 1,
+                    position: "relative",
                     display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    p: { xs: 2, sm: 3 },
+                    flexDirection: { xs: "column", sm: "row" },
+                    borderRadius: 2,
+                    overflow: "hidden",
+                    height: { xs: "auto", sm: 280 },
+                    boxShadow: item.sponsored
+                      ? "0 0 0px rgba(255, 193, 7, 0.6)"
+                      : "0 4px 15px rgba(0,0,0,0.08)",
+                    border: item.sponsored ? "3px solid #ffe100ff" : "none",
+                    transition: "all 0.3s ease",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: item.sponsored
+                        ? "0 0 10px rgba(255, 193, 7, 0.8)"
+                        : "0 8px 25px rgba(0,123,255,0.15)",
+                    },
                   }}
                 >
-                  <Box>
-                    <Stack direction="row" justifyContent="space-between" mb={1}>
-                      <Chip label={item.category} color="primary" size="small" />
-                      <Typography variant="body2" color="text.secondary">
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </Typography>
-                    </Stack>
-
-                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
-                      {item.title}
-                    </Typography>
-
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
+                  {/* 🟡 Animated Sponsored Badge */}
+                  {item.sponsored && (
+                    <Box
                       sx={{
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "-webkit-box",
-                        WebkitLineClamp: 3,
-                        WebkitBoxOrient: "vertical",
-                        mb: 2,
-                      }}
-                    >
-                      {truncateWords(item.description, 20)}{" "}
-                      {item.description.split(/\s+/).length > 20 && (
-                        <Button
-                          size="small"
-                          sx={{ textTransform: "none", p: 0, minWidth: "auto" }}
-                          onClick={() => setSelectedItem(item)}
-                        >
-                          See more
-                        </Button>
-                      )}
-                    </Typography>
-
-                    <Stack direction="row" spacing={2} mb={1.5}>
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <Timer fontSize="small" color="action" />
-                        <Typography variant="body2">{formatDeliveryTime(item.deliveryTime)}</Typography>
-                      </Stack>
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <AccountBalanceWallet fontSize="small" color="action" />
-                        <Typography variant="body2" fontWeight={600} color="primary">
-                          {item.price.toLocaleString()} LKR
-                        </Typography>
-                      </Stack>
-                    </Stack>
-
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Avatar {...stringAvatar(item.owner?.name || "A")} />
-                      <Typography variant="body2" color="text.secondary">
-                        {item.owner?.name || "anonymous"}
-                      </Typography>
-                    </Stack>
-                  </Box>
-
-                  <Box sx={{ mt: 2 }}>
-                    <Divider sx={{ mb: 1.5 }} />
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      sx={{
-                        background: "linear-gradient(135deg,#007BFF,#0056b3)",
-                        fontWeight: 600,
-                        textTransform: "none",
-                        py: 1,
-                        "&:hover": {
-                          background: "linear-gradient(135deg,#0056b3,#003d82)",
+                        position: "absolute",
+                        top: 12,
+                        left: 12,
+                        px: 1.8,
+                        py: 0.6,
+                        borderRadius: "8px",
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        color: "#000",
+                        textTransform: "uppercase",
+                        background: "linear-gradient(90deg, #ffeb3b, #ffca28, #ffeb3b)",
+                        backgroundSize: "200% 100%",
+                        animation: "shine 2s linear infinite",
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.2)",
+                        "@keyframes shine": {
+                          "0%": { backgroundPosition: "200% 0" },
+                          "100%": { backgroundPosition: "-200% 0" },
                         },
                       }}
-                      onClick={() => setSelectedItem(item)}
                     >
-                      View Details
-                    </Button>
+                      Sponsored
+                    </Box>
+                  )}
+
+                  <Box sx={{ flex: { xs: "0 0 200px", sm: "0 0 280px" }, height: { xs: 200, sm: "100%" } }}>
+                    {imgSrc ? (
+                      <CardMedia component="img" image={imgSrc} alt={item.title} sx={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                      <ImagePlaceholder />
+                    )}
                   </Box>
-                </CardContent>
-              </Card>
-            ))}
+
+                  {/* Details */}
+                  <CardContent
+                    sx={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      p: { xs: 2, sm: 3 },
+                    }}
+                  >
+                    <Box>
+                      <Stack direction="row" justifyContent="space-between" mb={1}>
+                        <Chip label={item.category || "Category"} color="primary" size="small" />
+                        <Typography variant="body2" color="text.secondary">
+                          {item.createdAt ? new Date(item.createdAt).toLocaleDateString() : ""}
+                        </Typography>
+                      </Stack>
+
+                      <Typography variant="h6" sx={{ mb: 1, fontWeight: 600 }}>
+                        {item.title}
+                      </Typography>
+
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 3,
+                          WebkitBoxOrient: "vertical",
+                          mb: 2,
+                        }}
+                      >
+                        {truncateWords(item.description, 10)}{" "}
+                        {String(item.description || "").split(/\s+/).length > 10 && (
+                          <Button size="small" sx={{ textTransform: "none", p: 0, minWidth: "auto" }} onClick={() => setSelectedItem(item)}>
+                            See more
+                          </Button>
+                        )}
+                      </Typography>
+
+                      <Stack direction="row" spacing={2} mb={1.5}>
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <Timer fontSize="small" color="action" />
+                          <Typography variant="body2">{formatDeliveryTime(item.deliveryTime)}</Typography>
+                        </Stack>
+                        <Stack direction="row" alignItems="center" spacing={0.5}>
+                          <AccountBalanceWallet fontSize="small" color="action" />
+                          <Typography variant="body2" fontWeight={600} color="primary">
+                            {Number(item.price || 0).toLocaleString()} LKR
+                          </Typography>
+                        </Stack>
+                      </Stack>
+
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <Avatar {...stringAvatar(item.owner?.name || "A")} />
+                        <Typography variant="body2" color="text.secondary">
+                          {item.owner?.name || "anonymous"}
+                        </Typography>
+                      </Stack>
+                    </Box>
+
+                    <Box sx={{ mt: 2 }}>
+                      <Divider sx={{ mb: 1.5 }} />
+                      <Button
+                        variant="contained"
+                        fullWidth
+                        sx={{
+                          background: "linear-gradient(135deg,#007BFF,#0056b3)",
+                          fontWeight: 600,
+                          textTransform: "none",
+                          py: 1,
+                          "&:hover": { background: "linear-gradient(135deg,#0056b3,#003d82)" },
+                        }}
+                        onClick={() => setSelectedItem(item)}
+                      >
+                        View Details
+                      </Button>
+                    </Box>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </Stack>
         ) : (
           <Box
