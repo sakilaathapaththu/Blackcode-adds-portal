@@ -2,7 +2,9 @@
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import { OAuth2Client } from "google-auth-library";
-
+import bcrypt from "bcryptjs";
+import PasswordReset from "../models/PasswordReset.js";
+import { sendMail } from "../utils/mailer.js";
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
@@ -173,5 +175,115 @@ export const googleLogin = async (req, res) => {
     });
   } catch (err) {
     return res.status(401).json({ message: "Google auth failed", error: err.message });
+  }
+};
+
+// helpers
+const makeOTP = () => String(Math.floor(100000 + Math.random() * 900000));
+const hash = async (val) => bcrypt.hash(val, 10);
+const compare = async (val, hashed) => bcrypt.compare(val, hashed);
+
+// POST /api/auth/forgot  { email }
+export const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body || {};
+    if (!email) return res.status(400).json({ message: "Email required" });
+
+    const user = await User.findOne({
+      email: String(email).toLowerCase().trim(),
+    });
+    if (!user) {
+      // generic message to avoid enumeration
+      return res.json({
+        message: "If this email exists, an OTP has been sent",
+        resetId: null,
+      });
+    }
+
+    const otp = makeOTP();
+    const otpHash = await hash(otp);
+    const EXPIRE_MIN = Number(process.env.RESET_EXPIRE_MIN || 10);
+    const expiresAt = new Date(Date.now() + EXPIRE_MIN * 60 * 1000);
+
+    const pr = await PasswordReset.create({
+      userId: user._id,
+      email: user.email,
+      otpHash,
+      expiresAt,
+    });
+
+    const appName = process.env.APP_NAME || "Your App";
+    const support = process.env.SUPPORT_EMAIL || "support@example.com";
+
+    try {
+      await sendMail({
+        to: user.email,
+        subject: `${appName} Password Reset OTP`,
+        html: `
+          <div style="font-family:sans-serif">
+            <h2>${appName} Password Reset</h2>
+            <p>Use this one-time code to reset your password:</p>
+            <p style="font-size:24px;font-weight:700;letter-spacing:2px">${otp}</p>
+            <p>This code expires in ${EXPIRE_MIN} minutes.</p>
+            <p>If you didn’t request this, ignore this email or contact ${support}.</p>
+          </div>
+        `,
+      });
+    } catch (mailErr) {
+      // clean up the reset record so user can retry
+      try { await PasswordReset.findByIdAndDelete(pr._id); } catch {}
+      console.error("sendMail failed:", mailErr?.message, mailErr);
+      return res.status(500).json({
+        message: "Failed to send OTP email",
+        error: mailErr?.message || "SMTP failure",
+      });
+    }
+
+    return res.json({ message: "OTP sent if email exists", resetId: pr._id });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
+  }
+};
+
+// POST /api/auth/reset  { resetId, otp, newPassword }
+export const resetPasswordWithOTP = async (req, res) => {
+  try {
+    const { resetId, otp, newPassword } = req.body || {};
+    if (!resetId || !otp || !newPassword) {
+      return res
+        .status(400)
+        .json({ message: "resetId, otp and newPassword required" });
+    }
+    if (String(newPassword).length < 6) {
+      return res
+        .status(400)
+        .json({ message: "Password must be at least 6 characters" });
+    }
+
+    const pr = await PasswordReset.findById(resetId);
+    if (!pr) return res.status(400).json({ message: "Invalid or expired request" });
+    if (pr.used) return res.status(400).json({ message: "This reset request was already used" });
+    if (pr.expiresAt < new Date()) return res.status(400).json({ message: "OTP expired" });
+    if (pr.attempts >= 5) return res.status(429).json({ message: "Too many attempts" });
+
+    // count attempt
+    pr.attempts += 1;
+    await pr.save();
+
+    const ok = await compare(String(otp), pr.otpHash);
+    if (!ok) return res.status(400).json({ message: "Invalid OTP" });
+
+    const user = await User.findById(pr.userId);
+    if (!user) return res.status(400).json({ message: "User not found" });
+
+    user.password = String(newPassword); // pre-save will hash
+    await user.save();
+
+    pr.used = true;
+    await pr.save();
+
+    return res.json({ message: "Password reset successful" });
+  } catch (err) {
+    return res.status(500).json({ message: "Server error", error: err.message });
   }
 };

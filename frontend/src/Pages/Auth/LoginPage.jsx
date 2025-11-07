@@ -1,15 +1,29 @@
+
 // src/Pages/Auth/LoginPage.jsx
 import React, { useContext, useEffect, useRef, useState } from "react";
 import {
-  Paper, Typography, TextField, Button, CircularProgress, Link,
-  IconButton, InputAdornment, Box, Divider, useMediaQuery, Container
+  Paper,
+  Typography,
+  TextField,
+  Button,
+  CircularProgress,
+  Link,
+  IconButton,
+  InputAdornment,
+  Box,
+  Divider,
+  useMediaQuery,
+  Container,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { loginUser, googleLogin } from "../../Api/Auth";
 import { AuthContext } from "../../Context/AuthContext";
 
-const GOOGLE_CLIENT_ID = "801008777970-q7dpn0jjusocfdfv7l6om5281ktue9vf.apps.googleusercontent.com"; // ← set this
+const GOOGLE_CLIENT_ID =
+  "801008777970-q7dpn0jjusocfdfv7l6om5281ktue9vf.apps.googleusercontent.com";
 
 export default function LoginPage({ onSwitch }) {
   const [form, setForm] = useState({ identifier: "", password: "" });
@@ -18,11 +32,22 @@ export default function LoginPage({ onSwitch }) {
   const [gLoading, setGLoading] = useState(false);
   const googleBtnRef = useRef(null);
 
+  // toast state
+  const [toast, setToast] = useState({
+    open: false,
+    severity: "info", // "success" | "error" | "warning" | "info"
+    message: "",
+  });
+  const openToast = (severity, message) =>
+    setToast({ open: true, severity, message });
+  const closeToast = () => setToast((t) => ({ ...t, open: false }));
+
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
   const isXs = useMediaQuery((theme) => theme.breakpoints.down("sm"));
 
-  const onChange = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
+  const onChange = (e) =>
+    setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   // --- Normal login submit ---
   const onSubmit = async (e) => {
@@ -31,10 +56,17 @@ export default function LoginPage({ onSwitch }) {
     try {
       const res = await loginUser(form); // { message, token, user }
       login(res.token, res.user);
-      if (res.user?.role === "provider") navigate("/dashboard");
-      else navigate("/");
+      openToast("success", "Login successful! Redirecting…");
+      setTimeout(() => {
+        if (res.user?.role === "provider") navigate("/dashboard");
+        else navigate("/");
+      }, 600);
     } catch (err) {
-      alert("Error: " + (err.message || "Login failed"));
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Login failed. Check your credentials.";
+      openToast("error", msg);
     } finally {
       setLoading(false);
     }
@@ -53,8 +85,8 @@ export default function LoginPage({ onSwitch }) {
           ux_mode: "popup",
         });
 
-        // adapt button width to screen (leave margins for padding)
-        const calcWidth = () => Math.min(360, Math.max(220, window.innerWidth - 48));
+        const calcWidth = () =>
+          Math.min(360, Math.max(220, window.innerWidth - 48));
         if (googleBtnRef.current) {
           googleBtnRef.current.innerHTML = ""; // clear re-renders on hot reload
           google.accounts.id.renderButton(googleBtnRef.current, {
@@ -84,17 +116,22 @@ export default function LoginPage({ onSwitch }) {
   const handleGoogleCredential = async (response) => {
     const idToken = response?.credential;
     if (!idToken) {
-      alert("Google sign-in failed: no credential");
+      openToast("error", "Google sign-in failed: no credential");
       return;
     }
     setGLoading(true);
     try {
       const res = await googleLogin(idToken); // { token, user }
       login(res.token, res.user);
-      if (res.user?.role === "provider") navigate("/dashboard");
-      else navigate("/");
+      openToast("success", "Logged in with Google! Redirecting…");
+      setTimeout(() => {
+        if (res.user?.role === "provider") navigate("/dashboard");
+        else navigate("/");
+      }, 600);
     } catch (err) {
-      alert("Google login failed: " + (err.message || "Unknown error"));
+      const msg =
+        err?.response?.data?.message || err?.message || "Google login failed.";
+      openToast("error", msg);
     } finally {
       setGLoading(false);
     }
@@ -108,7 +145,6 @@ export default function LoginPage({ onSwitch }) {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        // iOS safe-areas
         px: { xs: 2, sm: 3 },
         py: { xs: "calc(16px + env(safe-area-inset-top))", sm: 4 },
       }}
@@ -204,9 +240,22 @@ export default function LoginPage({ onSwitch }) {
           <Divider sx={{ flex: 1 }} />
         </Box>
 
+        <Typography align="right" sx={{ mt: -1, mb: 2 }}>
+          <Link
+            component="button"
+            onClick={() => navigate("/forgot-password")}
+            underline="hover"
+          >
+            Forgot password?
+          </Link>
+        </Typography>
+
         {/* Google button (auto width) */}
         <Box sx={{ display: "flex", justifyContent: "center", mb: 1 }}>
-          <div ref={googleBtnRef} style={{ width: "100%", display: "flex", justifyContent: "center" }} />
+          <div
+            ref={googleBtnRef}
+            style={{ width: "100%", display: "flex", justifyContent: "center" }}
+          />
         </Box>
         {gLoading && (
           <Box sx={{ display: "flex", justifyContent: "center", mb: 2 }}>
@@ -221,6 +270,23 @@ export default function LoginPage({ onSwitch }) {
           </Link>
         </Typography>
       </Paper>
+
+      {/* Toasts */}
+      <Snackbar
+        open={toast.open}
+        autoHideDuration={3000}
+        onClose={closeToast}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={closeToast}
+          severity={toast.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {toast.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

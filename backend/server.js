@@ -19,9 +19,27 @@ import OnlinePresence from "./models/OnlinePresence.js";
 import makeTrackVisitor from "./middleware/trackVisitor.js";
 import metricsRouterFactory from "./routes/metricsRoutes.js";
 import User from "./models/User.js";
+// SMTP verify
+import { transporter } from "./utils/mailer.js";
 
 dotenv.config();
 const app = express();
+
+console.log("[SMTP_ENV]", {
+  host: process.env.SMTP_HOST,
+  port: process.env.SMTP_PORT,
+  secure: process.env.SMTP_SECURE,
+  user: process.env.SMTP_USER,
+  from: process.env.MAIL_FROM,
+  forceGmail: process.env.SMTP_FORCE_GMAIL,
+});
+
+try {
+  await transporter.verify();
+  console.log("✅ SMTP ready:", process.env.SMTP_HOST || "smtp.gmail.com", process.env.SMTP_PORT || 465);
+} catch (e) {
+  console.error("❌ SMTP verify failed:", e.message);
+}
 
 // Resolve __dirname for ESM
 const __filename = fileURLToPath(import.meta.url);
