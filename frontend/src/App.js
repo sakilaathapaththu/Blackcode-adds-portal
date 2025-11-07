@@ -21,6 +21,7 @@ import TestPosts from "./Pages/test";
 import NewPost from "./Pages/post/NewPost";
 import EditPost from "./Pages/post/EditPost";
 import Footer from "./Components/Home/Footer";
+import ForgotPassword from "./Pages/Auth/ForgotPassword";
 
 const theme = createTheme({
   palette: { mode: "light", background: { default: "#F6F9FC" } },
@@ -61,6 +62,7 @@ function AppShell() {
               </ProtectedRoute>
             }
           />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route
             path="/dashboard"
             element={

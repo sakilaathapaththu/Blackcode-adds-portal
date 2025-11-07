@@ -32,3 +32,15 @@ export async function googleLogin(idToken) {
   const { data } = await http.post("/auth/google", { idToken });
   return data; // { message, token, user }
 }
+
+export async function requestPasswordReset(email) {
+  const { data } = await http.post("/auth/forgot", { email });
+  // returns: { message, resetId }
+  return data;
+}
+
+export async function resetPassword(payload) {
+  // payload: { resetId, otp, newPassword }
+  const { data } = await http.post("/auth/reset", payload);
+  return data;
+}
