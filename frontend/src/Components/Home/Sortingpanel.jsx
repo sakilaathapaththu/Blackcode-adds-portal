@@ -13,7 +13,6 @@ import {
   Button,
   Stack,
   Paper,
-  Fade,
   InputAdornment,
   Drawer,
   Fab,
@@ -25,10 +24,8 @@ import {
   Sort as SortIcon,
   RestartAlt,
   Search as SearchIcon,
-  CategoryOutlined,
   FilterAltOutlined,
   FilterAlt,
-  TrendingUpOutlined,
   Close as CloseIcon,
 } from "@mui/icons-material";
 
@@ -50,14 +47,12 @@ export default function Sortingpanel({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
-  // Handle scroll effect to detect when back-to-top button is visible
   useEffect(() => {
     const handleScroll = () => {
       setShowBackToTop(window.scrollY > 300);
     };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
@@ -105,233 +100,43 @@ export default function Sortingpanel({
     "Others",
   ];
 
-  // Desktop View - Original code unchanged
-  if (!isMobile) {
-    return (
-      <Fade in timeout={400}>
-        <Paper
-          elevation={3}
-          sx={{
-            p: 3,
-            borderRadius: 2,
-            bgcolor: "#ffffff",
-            display: "flex",
-            flexDirection: "column",
-            gap: 2.5,
-            border: "1px solid #e0e0e0",
-            transition: "all 0.3s ease",
-            "&:hover": {
-              boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-            },
-          }}
-        >
-          {/* Header */}
-          <Box display="flex" alignItems="center" gap={1.5}>
-            <Box
-              sx={{
-                width: 38,
-                height: 38,
-                borderRadius: "50%",
-                background: isFiltering
-                  ? "linear-gradient(135deg,#00C853,#007BFF)"
-                  : "linear-gradient(135deg,#007BFF,#0056b3)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "0.3s",
-              }}
-            >
-              {isFiltering ? (
-                <FilterAlt sx={{ color: "white" }} />
-              ) : (
-                <FilterAltOutlined sx={{ color: "white" }} />
-              )}
-            </Box>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 700,
-                background: "linear-gradient(135deg,#007BFF,#00C853)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-              }}
-            >
-              Filters & Sorting
-            </Typography>
-          </Box>
-
-          <Divider />
-
-          {/* Search */}
-          <TextField
-            size="small"
-            placeholder="Search by title or keyword..."
-            fullWidth
-            value={filters.search}
-            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ color: "#6b7280" }} />
-                </InputAdornment>
-              ),
-            }}
-          />
-
-          {/* Category */}
-          <FormControl size="small" fullWidth>
-            <InputLabel>Category</InputLabel>
-            <Select
-              value={filters.category}
-              label="Category"
-              startAdornment={
-                <InputAdornment position="start">
-                  <CategoryOutlined sx={{ color: "#6b7280", ml: -0.5 }} />
-                </InputAdornment>
-              }
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-            >
-              {categories.map((cat) => (
-                <MenuItem key={cat} value={cat}>
-                  {cat}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Price Range */}
-          <Box>
-            <Typography fontWeight={600} mb={1}>
-              Price Range (LKR)
-            </Typography>
-            <Typography
-              variant="body2"
-              color="#007BFF"
-              fontWeight={600}
-              mb={1}
-            >
-              {formatPrice(filters.priceRange[0])} -{" "}
-              {formatPrice(filters.priceRange[1])}
-            </Typography>
-            <Slider
-              value={filters.priceRange}
-              onChange={(e, newValue) =>
-                setFilters({ ...filters, priceRange: newValue })
-              }
-              valueLabelDisplay="auto"
-              step={500}
-              min={0}
-              max={100000}
-              sx={{
-                color: "#007BFF",
-                "& .MuiSlider-thumb": {
-                  bgcolor: "white",
-                  border: "3px solid #007BFF",
-                },
-              }}
-            />
-          </Box>
-
-          {/* Sort By */}
-          <FormControl size="small" fullWidth>
-            <InputLabel>Sort By</InputLabel>
-            <Select
-              value={sortOption}
-              label="Sort By"
-              startAdornment={
-                <InputAdornment position="start">
-                  <TrendingUpOutlined sx={{ color: "#6b7280", ml: -0.5 }} />
-                </InputAdornment>
-              }
-              onChange={(e) => setSortOption(e.target.value)}
-            >
-              <MenuItem value="newest">Newest First</MenuItem>
-              <MenuItem value="price-low">Price: Low → High</MenuItem>
-              <MenuItem value="price-high">Price: High → Low</MenuItem>
-              <MenuItem value="rating">Top Rated</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Divider />
-
-          {/* Buttons */}
-          <Stack direction="row" spacing={1.5}>
-            <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<RestartAlt />}
-              onClick={handleReset}
-              sx={{
-                borderColor: "#007BFF",
-                color: "#0056b3",
-                "&:hover": {
-                  bgcolor: "#E3F2FD",
-                  borderColor: "#0056b3",
-                },
-              }}
-            >
-              Reset
-            </Button>
-            <Button
-              variant="contained"
-              fullWidth
-              startIcon={<SortIcon />}
-              onClick={() => {
-                onFiltersChange(filters);
-                onSortChange(sortOption);
-              }}
-              sx={{
-                background: "linear-gradient(135deg,#007BFF,#00C853)",
-                "&:hover": {
-                  background: "linear-gradient(135deg,#0056b3,#009e4f)",
-                },
-              }}
-            >
-              Apply
-            </Button>
-          </Stack>
-        </Paper>
-      </Fade>
-    );
-  }
-
-  // Mobile View - NEW: Floating Button + Drawer
   return (
     <>
+      {/* ✅ Floating Filter Button (mobile & desktop independent positioning) */}
       <Fab
         color="primary"
         size="medium"
         onClick={() => setMobileOpen(true)}
         sx={{
           position: "fixed",
-          bottom: showBackToTop ? 90 : 20,
-          right: 20,
-          zIndex: 1000,
+          bottom: isMobile ? (showBackToTop ? 90 : 20) : (showBackToTop ? 100 : 40),
+          right: isMobile ? 20 : 30,
+          zIndex: 1200,
           width: 56,
           height: 56,
           borderRadius: "50%",
-          background: "linear-gradient(135deg,#007BFF,#00C853)", // ✅ same as Back-to-Top
-          boxShadow: "0 4px 20px rgba(0,123,255,0.4)", // ✅ same as Back-to-Top
+          background: "linear-gradient(135deg,#007BFF,#00C853)",
+          boxShadow: "0 4px 20px rgba(0,123,255,0.4)",
           color: "white",
           transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
           "&:hover": {
-            background: "linear-gradient(135deg,#0056b3,#009e4f)", // ✅ same hover
-            transform: "translateY(-4px) scale(1.08)",
-            boxShadow: "0 8px 24px rgba(0,123,255,0.4)",
+            background: "linear-gradient(135deg,#0056b3,#009e4f)",
+            transform: "translateY(-4px) scale(1.1)",
+            boxShadow: "0 8px 24px rgba(0,123,255,0.5)",
           },
         }}
       >
         {isFiltering ? <FilterAlt /> : <FilterAltOutlined />}
       </Fab>
 
+      {/* Drawer */}
       <Drawer
         anchor="right"
         open={mobileOpen}
         onClose={() => setMobileOpen(false)}
         sx={{
           "& .MuiDrawer-paper": {
-            width: "85%",
-            maxWidth: "400px",
+            width: isMobile ? "85%" : "420px",
           },
         }}
       >
@@ -339,12 +144,9 @@ export default function Sortingpanel({
           elevation={0}
           sx={{
             p: 3,
-            borderRadius: 0,
-            bgcolor: "#ffffff",
             display: "flex",
             flexDirection: "column",
             gap: 2.5,
-            border: "none",
             height: "100%",
           }}
         >
@@ -362,7 +164,6 @@ export default function Sortingpanel({
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  transition: "0.3s",
                 }}
               >
                 {isFiltering ? (
@@ -412,12 +213,9 @@ export default function Sortingpanel({
             <Select
               value={filters.category}
               label="Category"
-              startAdornment={
-                <InputAdornment position="start">
-                  <CategoryOutlined sx={{ color: "#6b7280", ml: -0.5 }} />
-                </InputAdornment>
+              onChange={(e) =>
+                setFilters({ ...filters, category: e.target.value })
               }
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
             >
               {categories.map((cat) => (
                 <MenuItem key={cat} value={cat}>
@@ -432,12 +230,7 @@ export default function Sortingpanel({
             <Typography fontWeight={600} mb={1}>
               Price Range (LKR)
             </Typography>
-            <Typography
-              variant="body2"
-              color="#007BFF"
-              fontWeight={600}
-              mb={1}
-            >
+            <Typography variant="body2" color="#007BFF" fontWeight={600} mb={1}>
               {formatPrice(filters.priceRange[0])} -{" "}
               {formatPrice(filters.priceRange[1])}
             </Typography>
@@ -446,7 +239,6 @@ export default function Sortingpanel({
               onChange={(e, newValue) =>
                 setFilters({ ...filters, priceRange: newValue })
               }
-              valueLabelDisplay="auto"
               step={500}
               min={0}
               max={100000}
@@ -460,17 +252,12 @@ export default function Sortingpanel({
             />
           </Box>
 
-          {/* Sort By */}
+          {/* Sort */}
           <FormControl size="small" fullWidth>
             <InputLabel>Sort By</InputLabel>
             <Select
               value={sortOption}
               label="Sort By"
-              startAdornment={
-                <InputAdornment position="start">
-                  <TrendingUpOutlined sx={{ color: "#6b7280", ml: -0.5 }} />
-                </InputAdornment>
-              }
               onChange={(e) => setSortOption(e.target.value)}
             >
               <MenuItem value="newest">Newest First</MenuItem>
@@ -484,20 +271,7 @@ export default function Sortingpanel({
 
           {/* Buttons */}
           <Stack direction="row" spacing={1.5}>
-            <Button
-              variant="outlined"
-              fullWidth
-              startIcon={<RestartAlt />}
-              onClick={handleReset}
-              sx={{
-                borderColor: "#007BFF",
-                color: "#0056b3",
-                "&:hover": {
-                  bgcolor: "#E3F2FD",
-                  borderColor: "#0056b3",
-                },
-              }}
-            >
+            <Button variant="outlined" fullWidth startIcon={<RestartAlt />} onClick={handleReset}>
               Reset
             </Button>
             <Button
