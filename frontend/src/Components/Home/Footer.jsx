@@ -108,17 +108,19 @@ const BackToTopButton = styled(IconButton)(({ theme, isMobile }) => ({
   right: isMobile ? 20 : 30,
   background: "linear-gradient(135deg,#007BFF,#00C853)",
   color: "white",
-  width: isMobile ? 48 : 56,
-  height: isMobile ? 48 : 56,
-  boxShadow: "0 8px 25px rgba(0,123,255,.3)",
+  width: 56, // ✅ same as SortingPanel Fab
+  height: 56, // ✅ same as SortingPanel Fab
+  borderRadius: "50%", // matches Fab shape
+  boxShadow: "0 4px 20px rgba(0,123,255,0.4)",
   zIndex: 1000,
-  transition: "all .3s cubic-bezier(.4,0,.2,1)",
+  transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
   "&:hover": {
-    transform: "translateY(-5px) scale(1.1)",
-    boxShadow: "0 15px 35px rgba(0,123,255,.4)",
-    animation: `${pulse} .6s ease-in-out`,
+    background: "linear-gradient(135deg,#0056b3,#009e4f)",
+    transform: "translateY(-4px) scale(1.08)",
+    boxShadow: "0 8px 24px rgba(0,123,255,0.4)",
   },
 }));
+
 
 // ✅ NEW: Stats pill (desktop: bottom-right floating; mobile: inline)
 const StatsPill = styled(Box)(({ theme }) => ({
