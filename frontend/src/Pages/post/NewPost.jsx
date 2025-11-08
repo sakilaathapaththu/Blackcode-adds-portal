@@ -561,6 +561,7 @@
 //     </Box>
 //   );
 // }
+
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -573,13 +574,15 @@ import {
   Stack,
   Divider,
   Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  Chip,
   Paper,
   LinearProgress,
   MenuItem,
+  FormControlLabel,
+  Checkbox,
+  Chip,
+  Card,
+  CardContent,
+  CardMedia,
 } from "@mui/material";
 import {
   AccessTime,
@@ -612,6 +615,7 @@ export default function NewPost() {
     description: "",
     category: "",
     price: "",
+    isNegotiable: false,
     deliveryTime: "",
     specializations: "",
     contact: "",
@@ -632,25 +636,23 @@ export default function NewPost() {
     return text.replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
   };
 
-  // ❗ description & price are REQUIRED; others unchanged
   const validate = (data = formData) => {
     let temp = {};
 
     if (touched.title) temp.title = data.title.trim() ? "" : "Title is required.";
     if (touched.category) temp.category = data.category.trim() ? "" : "Category is required.";
 
-    // Price REQUIRED: must be a positive number
-    // if (touched.price) {
-    //   const val = data.price.trim();
-    //   if (!val) temp.price = "Price is required.";
-    //   else if (isNaN(Number(val)) || Number(val) <= 0) temp.price = "Enter a valid price.";
-    //   else temp.price = "";
-    // }
+    // Price validation (only if not negotiable)
+    if (touched.price && !data.isNegotiable) {
+      const val = data.price.trim();
+      if (!val) temp.price = "Price is required unless negotiable.";
+      else if (isNaN(Number(val)) || Number(val) <= 0)
+        temp.price = "Enter a valid price.";
+      else temp.price = "";
+    }
 
-    // Delivery time optional (unchanged)
     if (touched.deliveryTime) temp.deliveryTime = "";
 
-    // Contact REQUIRED 10 digits (unchanged)
     if (touched.contact) {
       if (!data.contact.trim()) temp.contact = "Contact is required.";
       else if (!/^\d{10}$/.test(data.contact.trim()))
@@ -658,7 +660,6 @@ export default function NewPost() {
       else temp.contact = "";
     }
 
-    // Description REQUIRED + word limit
     if (touched.description) {
       const wc = countWords(data.description);
       if (!data.description.trim()) temp.description = "Description is required.";
@@ -693,6 +694,15 @@ export default function NewPost() {
     setFormData((s) => ({ ...s, [name]: value }));
   };
 
+  const handleNegotiableChange = (e) => {
+    const checked = e.target.checked;
+    setFormData((s) => ({
+      ...s,
+      isNegotiable: checked,
+      price: checked ? "" : s.price,
+    }));
+  };
+
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
     setImage(file || null);
@@ -707,8 +717,6 @@ export default function NewPost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Mark all as touched to trigger validation
     const allTouched = Object.keys(formData).reduce((acc, key) => ({ ...acc, [key]: true }), {});
     setTouched(allTouched);
 
@@ -718,7 +726,6 @@ export default function NewPost() {
 
     try {
       setLoading(true);
-
       const data = new FormData();
       Object.keys(formData).forEach((key) => data.append(key, formData[key]));
       if (image) data.append("image", image);
@@ -769,7 +776,7 @@ export default function NewPost() {
       <Container maxWidth="lg">
         <Box sx={{ mb: 4, textAlign: "left" }}>
           <Typography variant="h3" gutterBottom sx={{ fontWeight: 700, color: "#1a237e" }}>
-            Create New Post
+            Create New Advertisement
           </Typography>
           <Typography variant="subtitle1" color="text.secondary">
             Fill in the details and see a live preview of your post
@@ -797,7 +804,6 @@ export default function NewPost() {
                     Post Details
                   </Typography>
 
-                  {/* Title (required) */}
                   <TextField
                     label="Title"
                     name="title"
@@ -809,7 +815,6 @@ export default function NewPost() {
                     helperText={touched.title ? errors.title : ""}
                   />
 
-                  {/* Category (required) */}
                   <TextField
                     label="Category"
                     name="category"
@@ -828,20 +833,39 @@ export default function NewPost() {
                     ))}
                   </TextField>
 
-                  {/* Price (REQUIRED) */}
-                  <TextField
-                    label="Price (LKR)"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    onBlur={handleBlur}
-                    fullWidth
-                    error={touched.price && !!errors.price}
-                    helperText={touched.price ? errors.price : ""}
-                    inputProps={{ inputMode: "numeric" }}
-                  />
+                  {/* Price + Negotiable Option */}
+                  <Box>
+                    <TextField
+                      label="Price (LKR)"
+                      name="price"
+                      value={formData.price}
+                      onChange={handleChange}
+                      onBlur={handleBlur}
+                      fullWidth
+                      disabled={formData.isNegotiable}
+                      error={touched.price && !!errors.price}
+                      helperText={
+                        formData.isNegotiable
+                          ? "Negotiable — no need to enter a price."
+                          : touched.price
+                          ? errors.price
+                          : ""
+                      }
+                      inputProps={{ inputMode: "numeric" }}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={formData.isNegotiable}
+                          onChange={handleNegotiableChange}
+                          name="isNegotiable"
+                        />
+                      }
+                      label="Price can be negotiated"
+                      sx={{ mt: 1 }}
+                    />
+                  </Box>
 
-                  {/* Delivery Time (optional) */}
                   <TextField
                     label="Delivery Time — optional"
                     name="deliveryTime"
@@ -849,11 +873,9 @@ export default function NewPost() {
                     onChange={handleChange}
                     onBlur={handleBlur}
                     fullWidth
-                    error={touched.deliveryTime && !!errors.deliveryTime}
-                    helperText={touched.deliveryTime ? errors.deliveryTime || "You can leave this empty" : "You can leave this empty"}
+                    helperText="You can leave this empty"
                   />
 
-                  {/* Contact (required) */}
                   <TextField
                     label="Contact"
                     name="contact"
@@ -866,7 +888,6 @@ export default function NewPost() {
                     inputProps={{ inputMode: "numeric", maxLength: 10 }}
                   />
 
-                  {/* Description (REQUIRED with word limit) */}
                   <Box>
                     <TextField
                       label="Description"
@@ -907,7 +928,6 @@ export default function NewPost() {
                     />
                   </Box>
 
-                  {/* Specializations (optional) */}
                   <TextField
                     label="Specializations (comma separated) — optional"
                     name="specializations"
@@ -918,11 +938,11 @@ export default function NewPost() {
                     helperText="Leave blank if not applicable"
                   />
 
-                  {/* Image Upload */}
                   <Button variant="outlined" component="label" startIcon={<ImageIcon />}>
                     {image ? "Change Image" : "Upload Image"}
                     <input type="file" hidden accept="image/*" onChange={handleFileChange} />
                   </Button>
+
                   {image && (
                     <Typography variant="caption" color="success.main" sx={{ mt: 1, display: "block" }}>
                       ✓ {image.name}
@@ -943,21 +963,12 @@ export default function NewPost() {
                     <Button
                       variant="contained"
                       type="submit"
-                      disabled={isLimitReached || loading || Object.values(errors).some((v) => v !== "")}
+                      disabled={isFormInvalid}
                       sx={{
-                        bgcolor:
-                          isLimitReached || loading || Object.values(errors).some((v) => v !== "")
-                            ? "grey.400"
-                            : "#1a237e",
-                        opacity:
-                          isLimitReached || loading || Object.values(errors).some((v) => v !== "")
-                            ? 0.6
-                            : 1,
+                        bgcolor: isFormInvalid ? "grey.400" : "#1a237e",
+                        opacity: isFormInvalid ? 0.6 : 1,
                         "&:hover": {
-                          bgcolor:
-                            isLimitReached || loading || Object.values(errors).some((v) => v !== "")
-                              ? "grey.500"
-                              : "#0d47a1",
+                          bgcolor: isFormInvalid ? "grey.500" : "#0d47a1",
                         },
                       }}
                     >
@@ -1038,9 +1049,15 @@ export default function NewPost() {
                       <AccountBalanceWallet sx={{ color: "#4caf50", fontSize: 20 }} />
                       <Typography
                         variant="body1"
-                        sx={{ fontWeight: 600, color: formData.price ? "#4caf50" : "#bbb" }}
+                        sx={{
+                          fontWeight: 600,
+                          color:
+                            formData.price || formData.isNegotiable ? "#4caf50" : "#bbb",
+                        }}
                       >
-                        {formData.price
+                        {formData.isNegotiable
+                          ? "Price can be Negotiated"
+                          : formData.price
                           ? `LKR ${Number(formData.price).toLocaleString("en-LK")}`
                           : "Price not set"}
                       </Typography>

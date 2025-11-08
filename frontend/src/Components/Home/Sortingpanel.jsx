@@ -113,7 +113,7 @@ export default function Sortingpanel({
           elevation={3}
           sx={{
             p: 3,
-            borderRadius: 3,
+            borderRadius: 2,
             bgcolor: "#ffffff",
             display: "flex",
             flexDirection: "column",
@@ -309,15 +309,15 @@ export default function Sortingpanel({
           zIndex: 1000,
           width: 56,
           height: 56,
-          background: isFiltering
-            ? "linear-gradient(135deg,#00C853,#007BFF)"
-            : "linear-gradient(135deg,#007BFF,#0056b3)",
-          boxShadow: "0 4px 20px rgba(0, 123, 255, 0.4)",
-          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+          borderRadius: "50%",
+          background: "linear-gradient(135deg,#007BFF,#00C853)", // ✅ same as Back-to-Top
+          boxShadow: "0 4px 20px rgba(0,123,255,0.4)", // ✅ same as Back-to-Top
+          color: "white",
+          transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
           "&:hover": {
-            background: isFiltering
-              ? "linear-gradient(135deg,#009e4f,#0056b3)"
-              : "linear-gradient(135deg,#0056b3,#003d82)",
+            background: "linear-gradient(135deg,#0056b3,#009e4f)", // ✅ same hover
+            transform: "translateY(-4px) scale(1.08)",
+            boxShadow: "0 8px 24px rgba(0,123,255,0.4)",
           },
         }}
       >
