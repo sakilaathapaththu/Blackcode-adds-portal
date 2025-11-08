@@ -26,6 +26,7 @@ import {
 import Sortingpanel from "../../Components/Home/Sortingpanel";
 import PostsDetailsview from "../../Components/post/PostsDetailsview";
 import http from "../../Utils/http";
+import SidebarAds from "../../Components/Ads/SidebarAds";
 
 // ---- helpers ----
 function stringToColor(str = "A") {
@@ -219,18 +220,32 @@ export default function PostsPage() {
 
   return (
     <Box sx={{ bgcolor: "#F6F9FC", minHeight: "100vh" }}>
+
+      {/* 🟢 Mobile Ad Panel - appears at top of page */}
+      {/* {isMobile && (
+        <Box sx={{ my: 2 }}>
+          <SidebarAds
+            ads={[
+              { title: "Promote Your Ad!", text: "Reach 10,000+ daily users" },
+              { image: "/assets/ads/sample1.jpg", title: "Ad Image 1" },
+            ]}
+          />
+        </Box>
+      )} */}
+
       <Box
         sx={{
           display: "flex",
           maxWidth: "1600px",
           mx: "auto",
-          gap: 3,
-          px: { xs: 2, md: 3 },
+          gap: { xs: 2, md: 2.5 },
+          pl: { xs: 2, md: 2 }, // ⬅ slightly reduced left padding
+          pr: { xs: 2, md: 3 }, // ⬅ keep right padding
           py: 3,
         }}
       >
         {/* Sorting Panel - Desktop */}
-        {!isMobile && (
+        {/* {!isMobile && (
           <Box
             sx={{
               width: "320px",
@@ -242,7 +257,7 @@ export default function PostsPage() {
               onSortChange={handleSortChange}
             />
           </Box>
-        )}
+        )} */}
 
         {/* Mobile Sorting Panel */}
         {isMobile && (
@@ -252,7 +267,31 @@ export default function PostsPage() {
           />
         )}
 
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+{/*===============================================================================================================*/}
+              {/* Google Ad Panel */}
+              {!isMobile && (
+                <Box sx={{ width: "0px", flexShrink: 0 }}>
+                  <Sortingpanel
+                    onFiltersChange={handleFiltersChange}
+                    onSortChange={handleSortChange}
+                  />
+                </Box>
+              )}
+
+              {/* 🟣 Right Side Advertisement Panel (Desktop only) */}
+              {!isMobile && (
+                <Box sx={{ width: "260px", flexShrink: 0 }}>
+                  <SidebarAds
+                    ads={[
+                      { title: "Promote Your Ad!", text: "Reach 10,000+ daily users" },
+                      { image: "/assets/ads/sample1.jpg", title: "Ad Image 1" },
+                    ]}
+                  />
+                </Box>
+              )}
+{/*===============================================================================================================*/}
+        
+        <Box sx={{ flex: 1, minWidth: 0, pr: { md: 1 } }}>
           {/* 🟡 Refined Sponsored Posts Carousel Section */}
           {sponsoredItems.length > 0 && (
             <Box 
@@ -318,17 +357,29 @@ export default function PostsPage() {
 
               {/* Carousel Container */}
               <Box
-                ref={carouselRef}
-                sx={{
-                  display: "flex",
-                  gap: 2.5,
-                  overflowX: "hidden",
-                  scrollBehavior: "smooth",
-                  scrollbarWidth: "none",
-                  "&::-webkit-scrollbar": { display: "none" },
-                  pb: 2,
-                  pt: 1,
-                }}
+                 ref={carouselRef}
+                  sx={{
+                    display: "flex",
+                    gap: 2.5,
+                    overflowX: "auto", // ✅ allows touch scroll on mobile
+                    scrollSnapType: "x mandatory", // smooth snap-like scrolling
+                    scrollBehavior: "smooth",
+                    scrollbarWidth: "none",
+                    "&::-webkit-scrollbar": { display: "none" },
+                    pb: 2,
+                    pt: 1,
+                    cursor: "grab",
+                    "&:active": { cursor: "grabbing" },
+                  }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.dataset.dragStart = e.touches[0].clientX;
+                  }}
+                  onTouchMove={(e) => {
+                    const startX = parseFloat(e.currentTarget.dataset.dragStart || 0);
+                    const dx = startX - e.touches[0].clientX;
+                    e.currentTarget.scrollLeft += dx;
+                    e.currentTarget.dataset.dragStart = e.touches[0].clientX;
+                  }}
               >
                 {sponsoredItems.map((item) => {
                   const imgSrc = fileURL(item.image);
@@ -360,30 +411,37 @@ export default function PostsPage() {
                         },
                       }}
                     >
-                      {/* Sponsored Badge - Inside card top-right */}
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          top: 12,
-                          right: 12,
-                          px: 2,
-                          py: 0.6,
-                          borderRadius: "16px",
-                          fontWeight: 700,
-                          fontSize: "0.7rem",
-                          color: "#000",
-                          background: "linear-gradient(135deg, #FFD54F, #FFB300)",
-                          boxShadow: "0 2px 8px rgba(255,193,7,0.25)",
-                          zIndex: 10,
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 0.5,
-                          border: "1px solid rgba(255, 255, 255, 0.8)",
-                        }}
-                      >
-                        <Star sx={{ fontSize: 13 }} />
-                        Sponsored
-                      </Box>
+                
+                 {/* Sponsored Badge - Inside card top-right */}
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 12,
+                      right: 12,
+                      px: 2,
+                      py: 0.6,
+                      borderRadius: "16px",
+                      fontWeight: 700,
+                      fontSize: "0.7rem",
+                      color: "#fff",
+                      background: "linear-gradient(90deg, #FFD700, #FFC107, #FFD700)",
+                      backgroundSize: "200% 200%",
+                      animation: "goldFlow 3s ease-in-out infinite",
+                      boxShadow: "0 0 8px rgba(255, 215, 0, 0.5)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 0.5,
+                      zIndex: 10,
+                      "@keyframes goldFlow": {
+                        "0%": { backgroundPosition: "0% 50%" },
+                        "50%": { backgroundPosition: "100% 50%" },
+                        "100%": { backgroundPosition: "0% 50%" },
+                      },
+                    }}
+                  >
+                    <Star sx={{ fontSize: 13 }} />
+                    Sponsored
+                  </Box>
 
                       {/* Image */}
                       <Box sx={{ height: 200, position: "relative", overflow: "hidden" }}>
@@ -510,6 +568,18 @@ export default function PostsPage() {
                   );
                 })}
               </Box>
+            </Box>
+          )}
+
+          {/* 🟢 Mobile Sidebar Ads (between sponsored and all ads) */}
+          {isMobile && (
+            <Box sx={{ my: 3 }}>
+              <SidebarAds
+                ads={[
+                  { title: "Promote Your Ad!", text: "Reach 10,000+ daily users" },
+                  { image: "/assets/ads/sample1.jpg", title: "Ad Image 1" },
+                ]}
+              />
             </Box>
           )}
 
